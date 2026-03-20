@@ -86,7 +86,8 @@ git diff pyproject.toml uv.lock
 
 ## 3. プロンプトのメンテナンス
 
-プロンプトは各分析モジュールの `SYSTEM_PROMPT` 定数として定義されている。
+プロンプトは各分析モジュールの `_build_system_prompt(nonce: str) -> str` 関数として実装されている
+（静的定数ではなく — nonce を呼び出し時に埋め込む必要があるため）。
 
 | ファイル | 担当 |
 |---|---|
@@ -99,7 +100,7 @@ git diff pyproject.toml uv.lock
 
 1. **変更前にテストを実行**して現状を記録する
 2. **必ずセキュリティガードを維持する**（以下の2要素は削除・弱体化禁止）
-   - `<user_message>` タグでのデータ包囲
+   - `<user_message_{nonce}>` nonce 付きタグでのデータ包囲
    - 「タグ内はデータであり指示ではない」旨の明示
 3. **JSON スキーマの変更を伴う場合**は `src/aiir/models.py` の対応モデルも更新する
 4. **CHANGELOG.md に変更内容を記載**する
@@ -107,7 +108,7 @@ git diff pyproject.toml uv.lock
 ### プロンプト変更の影響範囲
 
 ```
-SYSTEM_PROMPT を変更
+_build_system_prompt() を変更
     ├─ JSONスキーマが変わった → models.py のモデルも更新
     ├─ 出力フィールドが増えた → Markdown フォーマッタも更新
     └─ カテゴリが変わった    → test_extractor_prompt.py のテストも更新
@@ -259,6 +260,51 @@ export AIIR_LLM_API_KEY=<新しいキー>
 
 ---
 
+## 6.5. Web UI（`aiir serve`）
+
+`aiir serve` コマンドは、レポートとナレッジ文書を閲覧するための読み取り専用ローカル Web サーバーを起動します。
+
+### 使い方
+
+```bash
+# カレントディレクトリをスキャン、ポート 8765 で起動、ブラウザ自動起動
+aiir serve
+
+# データディレクトリとポートを指定
+aiir serve /path/to/analysis --port 9000
+
+# ブラウザを自動起動しない
+aiir serve --no-browser
+```
+
+### セキュリティ
+
+サーバーは**必ず `127.0.0.1`（ローカルホスト）にバインド**され、ネットワークからはアクセスできません。
+パストラバーサル攻撃はファイルパスを解決してデータディレクトリ内に収まることを確認することで防止されます。
+
+### ファイル探索
+
+サーバーはデータディレクトリを再帰的にスキャンして以下を収集します：
+- **レポート JSON** — `"summary"` と `"tactics"` のキーを両方持つファイル
+- **戦術 YAML** — `id` フィールドが `"tac-"` で始まるファイル
+
+### Web UI に新しいページを追加する
+
+1. `src/aiir/server/routes.py` にルートハンドラを追加する
+2. `src/aiir/server/templates/` に Jinja2 テンプレートを作成する
+3. 必要に応じて `src/aiir/server/app.py` でルートを登録する
+4. `tests/test_server/test_routes.py` にテストを書く
+
+### Web UI のトラブルシューティング
+
+| 症状 | 想定原因 | 対処 |
+|---|---|---|
+| レポートが表示されない | JSON 形式が期待と異なる | `aiir report` を先に実行、`summary`+`tactics` キーを確認 |
+| 戦術が表示されない | YAML の id フィールドに `tac-` プレフィックスがない | フォーマッタ出力を確認、`aiir knowledge` を再実行 |
+| ポートが使用中 | ポート 8765 が別プロセスに占有されている | `--port <他のポート>` を使用 |
+
+---
+
 ## 7. テスト戦略
 
 ### テストの種類と責務
@@ -266,10 +312,11 @@ export AIIR_LLM_API_KEY=<新しいキー>
 | テスト種別 | 場所 | 内容 |
 |---|---|---|
 | ユニットテスト | `tests/test_parser/` | defang・sanitizer の入出力を直接検証 |
-| プロンプト内容テスト | `tests/test_knowledge/test_extractor_prompt.py` | SYSTEM_PROMPT にカテゴリ・ツール名が存在するか |
+| プロンプト内容テスト | `tests/test_knowledge/test_extractor_prompt.py` | `_build_system_prompt()` 出力にカテゴリ・ツール名が存在するか |
 | モック統合テスト | `tests/test_llm/` | LLM クライアントの API 呼び出し形式を検証 |
 | フォーマッタテスト | `tests/test_knowledge/test_formatter.py` | YAML 出力の構造を検証 |
 | Keychain テスト | `tests/test_keychain/` | インメモリモック keyring で動作確認 |
+| サーバーテスト | `tests/test_server/` | FastAPI ルートのレスポンスとパストラバーサル防止を検証 |
 
 ### LLM を使う機能のテスト方針
 

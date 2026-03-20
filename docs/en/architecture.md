@@ -50,6 +50,14 @@ Input (scat/stail JSON export)
 │ report/          │
 │ generator.py     │  → Markdown / JSON report
 └──────────────────┘
+          │
+          ▼
+┌──────────────────┐
+│ server/          │  ← app.py / routes.py
+│ (aiir serve)     │    loader.py / templates/
+│                  │
+│ Read-only web UI │    127.0.0.1:8765
+└──────────────────┘
 ```
 
 ## Module Responsibilities
@@ -90,8 +98,24 @@ Three analyzers, each with a focused system prompt and structured JSON output:
 ### `aiir.report`
 Aggregates all analysis results into cohesive Markdown or JSON reports.
 
+### `aiir.server`
+Provides a read-only local web UI for browsing analysis outputs:
+- **app**: FastAPI application factory (`create_app(data_dir)`) — configures Jinja2 templates and registers routes
+- **routes**: HTTP handlers for all pages and JSON APIs:
+  - `GET /` — Dashboard with report count, severity breakdown, and tactic category stats
+  - `GET /report?path=...` — Tabbed report viewer (Summary / Activity / Roles / Tactics)
+  - `GET /knowledge` — Filterable knowledge library (category and tag filters)
+  - `GET /tactic?path=...` — Full tactic detail view
+  - `GET /api/reports` — JSON list of all discovered reports
+  - `GET /api/knowledge` — JSON list of all discovered tactics
+- **loader**: Secure file discovery — recursively scans a data directory for report JSON
+  files (identified by `"summary"` + `"tactics"` keys) and tactic YAML files (identified
+  by `id` starting with `"tac-"`). Path traversal is prevented by resolving all paths and
+  confirming they remain within the data directory.
+- **templates**: Jinja2 HTML templates with Tailwind CSS CDN styling (Japanese UI)
+
 ### `aiir.cli`
-Click-based CLI with six subcommands. Each analysis command auto-detects whether
+Click-based CLI with seven subcommands. Each analysis command auto-detects whether
 the input is a raw export or preprocessed file (by checking for the `security_warnings`
 field) and runs ingestion if needed.
 
@@ -109,8 +133,10 @@ the LLM:
 1. **Defanging** (in `parser/defang.py`): IoCs are replaced with defanged variants
    so malicious URLs and IPs cannot be accidentally activated.
 2. **Sanitization** (in `parser/sanitizer.py`): Text is scanned for 14+ prompt
-   injection patterns and wrapped in `<user_message>` XML tags to signal to the LLM
-   that the content is data, not instructions.
+   injection patterns and wrapped in nonce-tagged XML blocks (`<user_message_{nonce}>`)
+   to signal to the LLM that the content is data, not instructions. A single
+   cryptographically random nonce is generated per `aiir ingest` run and shared
+   across all messages and LLM system prompts in that session.
 
 The LLM client is the only component that makes network requests, and only to the
 configured endpoint.

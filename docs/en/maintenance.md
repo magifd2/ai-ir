@@ -86,7 +86,8 @@ git diff pyproject.toml uv.lock
 
 ## 3. Prompt Maintenance
 
-Prompts are defined as `SYSTEM_PROMPT` constants in each analysis module.
+Prompts are implemented as `_build_system_prompt(nonce: str) -> str` functions in each
+analysis module (not as static constants — the nonce must be embedded at call time).
 
 | File | Responsibility |
 |---|---|
@@ -99,7 +100,7 @@ Prompts are defined as `SYSTEM_PROMPT` constants in each analysis module.
 
 1. **Run tests before making changes** to record the current state
 2. **Always preserve the security guards** (the following two elements must not be removed or weakened):
-   - Wrapping data in `<user_message>` tags
+   - Wrapping data in `<user_message_{nonce}>` nonce-tagged blocks
    - Explicitly stating that content within the tags is data, not instructions
 3. **If the JSON schema changes**, also update the corresponding model in `src/aiir/models.py`
 4. **Record the change in CHANGELOG.md**
@@ -107,7 +108,7 @@ Prompts are defined as `SYSTEM_PROMPT` constants in each analysis module.
 ### Impact Scope of Prompt Changes
 
 ```
-Changing SYSTEM_PROMPT
+Changing _build_system_prompt()
     ├─ JSON schema changed    → also update models in models.py
     ├─ Output fields added    → also update Markdown formatter
     └─ Categories changed     → also update tests in test_extractor_prompt.py
@@ -261,6 +262,53 @@ Currently only the scat/stail JSON export format is supported. To support a new 
 
 ---
 
+## 6.5. Web UI (`aiir serve`)
+
+The `aiir serve` command starts a read-only local web server for browsing reports and
+knowledge documents.
+
+### Usage
+
+```bash
+# Scan current directory, serve on port 8765, auto-open browser
+aiir serve
+
+# Specify data directory and port
+aiir serve /path/to/analysis --port 9000
+
+# Start without opening browser
+aiir serve --no-browser
+```
+
+### Security
+
+The server **always binds to `127.0.0.1`** (localhost only) and cannot be reached
+from the network. Path traversal attacks are prevented: all file paths are resolved
+and verified to remain within the data directory before being read.
+
+### File Discovery
+
+The server recursively scans the data directory for:
+- **Report JSON files** — identified by having both `"summary"` and `"tactics"` keys
+- **Tactic YAML files** — identified by an `id` field starting with `"tac-"`
+
+### Adding a New Page to the Web UI
+
+1. Add a route handler in `src/aiir/server/routes.py`
+2. Create a Jinja2 template in `src/aiir/server/templates/`
+3. Add the route to the FastAPI app in `src/aiir/server/app.py` if needed
+4. Write tests in `tests/test_server/test_routes.py`
+
+### Troubleshooting the Web UI
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| No reports shown | Reports not in expected JSON format | Run `aiir report` first; check file has `summary`+`tactics` keys |
+| No tactics shown | YAML id field missing `tac-` prefix | Check formatter output; re-run `aiir knowledge` |
+| Port already in use | Another process on port 8765 | Use `--port <other>` |
+
+---
+
 ## 7. Test Strategy
 
 ### Test Types and Responsibilities
@@ -268,10 +316,11 @@ Currently only the scat/stail JSON export format is supported. To support a new 
 | Test Type | Location | What it tests |
 |---|---|---|
 | Unit tests | `tests/test_parser/` | Direct input/output verification of defang and sanitizer |
-| Prompt content tests | `tests/test_knowledge/test_extractor_prompt.py` | Whether categories and tool names exist in SYSTEM_PROMPT |
+| Prompt content tests | `tests/test_knowledge/test_extractor_prompt.py` | Whether categories and tool names exist in `_build_system_prompt()` output |
 | Mock integration tests | `tests/test_llm/` | API call format of the LLM client |
 | Formatter tests | `tests/test_knowledge/test_formatter.py` | Structure of YAML output |
 | Keychain tests | `tests/test_keychain/` | Behavior verification with an in-memory mock keyring |
+| Server tests | `tests/test_server/` | FastAPI route responses and path traversal prevention |
 
 ### Testing Policy for LLM-Dependent Features
 

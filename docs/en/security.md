@@ -108,13 +108,13 @@ never serialized to output files.
 4. **Rotate API keys** after processing incidents that involved credential compromise.
 5. **Check `security_warnings`** in preprocessed output for injection risk indicators.
 
-### 6. macOS Keychain Integration
+### 6. Cross-platform Keyring Integration
 
 **Risk**: Storing the LLM API key in a plaintext `.env` file exposes it to other
 processes running as the same user.
 
-**Control**: The `keychain.py` module stores the API key in the macOS login Keychain
-(or the platform equivalent on Linux/Windows) using the `keyring` library.
+**Control**: The `keychain.py` module stores the API key in the system credential store
+using the `keyring` library, which automatically selects the appropriate backend:
 
 ```bash
 # Store key in Keychain (prompts securely, no echo)
@@ -127,13 +127,19 @@ aiir config delete-key
 aiir config show
 ```
 
-Key resolution order: `AIIR_LLM_API_KEY` env var → system Keychain → error.
-On headless systems without a Keychain backend, the env var / `.env` fallback is used.
+Key resolution order: `AIIR_LLM_API_KEY` env var → system keyring → error.
+On headless systems without a working keyring backend, the env var / `.env` fallback is used.
 
-**macOS Keychain details**:
+**Platform-specific backends** (selected automatically by the `keyring` library):
+
+| Platform | Backend |
+|---|---|
+| macOS | Keychain Services (login keychain, `~/Library/Keychains/login.keychain-db`) |
+| Linux | SecretService via D-Bus (GNOME Keyring / KWallet) |
+| Windows | Windows Credential Manager |
+
 - Service name: `aiir`, Account: `llm_api_key`
-- Stored in the current user's login keychain (`~/Library/Keychains/login.keychain-db`)
-- Access is locked when the user session is locked
+- Access is protected by the OS user session (locked when session is locked)
 
 ## Residual Risks
 
