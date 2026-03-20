@@ -73,7 +73,7 @@
         <tbody>
           {% for ev in s.get("timeline", []) %}
           <tr class="border-t border-gray-100 hover:bg-gray-50">
-            <td class="px-3 py-2 text-gray-500 whitespace-nowrap font-mono text-xs">{{ ev.get("timestamp","") }}</td>
+            <td class="px-3 py-2 text-gray-500 whitespace-nowrap font-mono text-xs utc-ts" data-utc="{{ ev.get('timestamp','') }}">{{ ev.get("timestamp","") }}</td>
             <td class="px-3 py-2 font-medium">@{{ ev.get("actor","") | strip_at }}</td>
             <td class="px-3 py-2 text-gray-700">{{ ev.get("event","") }}</td>
           </tr>
@@ -120,7 +120,7 @@
         <tbody>
           {% for a in p.get("actions", []) %}
           <tr class="border-t border-gray-100 hover:bg-gray-50">
-            <td class="px-3 py-2 text-gray-400 font-mono text-xs">{{ a.get("timestamp","") }}</td>
+            <td class="px-3 py-2 text-gray-400 font-mono text-xs utc-ts" data-utc="{{ a.get('timestamp','') }}">{{ a.get("timestamp","") }}</td>
             <td class="px-3 py-2 text-gray-700">{{ a.get("purpose","") }}</td>
             <td class="px-3 py-2"><code class="text-xs bg-gray-100 px-1 rounded">{{ a.get("method","") }}</code></td>
             <td class="px-3 py-2 text-gray-600">{{ a.get("findings","") }}</td>
@@ -226,6 +226,21 @@
 </div>
 
 <script>
+// Convert UTC timestamps to browser local time
+document.querySelectorAll('.utc-ts').forEach(el => {
+  const raw = el.dataset.utc.trim();
+  if (!raw) return;
+  // Match "YYYY-MM-DD HH:MM" or "YYYY-MM-DD HH:MM:SS" (UTC from Slack export)
+  const iso = raw.match(/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/)
+    ? raw.replace(' ', 'T') + 'Z'
+    : raw;
+  const d = new Date(iso);
+  if (!isNaN(d.getTime())) {
+    el.textContent = d.toLocaleString();
+    el.title = raw + ' (UTC)';
+  }
+});
+
 function showTab(name) {
   const panes = ['summary','activity','roles','tactics'];
   panes.forEach(p => {
