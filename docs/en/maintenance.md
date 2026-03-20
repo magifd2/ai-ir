@@ -268,7 +268,30 @@ Currently only the scat/stail JSON export format is supported. To support a new 
 
 ---
 
-## 6.4. Knowledge Extraction via `aiir report`
+## 6.4. Report Generation (`report/generator.py`)
+
+### Design Rationale: Two Markdown Renderers
+
+Each analysis module (`summarizer`, `activity`, `roles`) exposes a `format_*_markdown()`
+function that renders a **standalone** Markdown document with H2 top-level headings, suitable
+for piping to a renderer or saving on its own.
+
+`generate_markdown_report()` in `report/generator.py` renders a **combined** report where
+those same sections appear as H3 sub-sections under H2 headers. The rendering details also
+differ intentionally:
+
+| Aspect | Standalone (`format_*_markdown`) | Combined (`generate_markdown_report`) |
+|---|---|---|
+| Activity heading level | H2 (`## @name`) | H3 (`### @name`) |
+| Roles confidence label | `[HIGH]` / `[MED]` / `[LOW]` | `(High confidence)` etc. |
+| Roles participant layout | H3 heading + `**Evidence:**` block | bullet list with `_evidence_` sub-bullets |
+| Relationships table | 4 columns incl. Description | 3 columns (Description omitted) |
+
+These are two distinct rendering contexts with different heading hierarchy and information
+density requirements. Do not refactor them into a shared implementation without accounting
+for these structural and stylistic differences.
+
+### Knowledge Extraction via `aiir report`
 
 The standalone `aiir knowledge` command was removed in v0.5.0 to prevent inconsistency
 between the knowledge base and reports (they previously made independent LLM calls and
