@@ -28,7 +28,15 @@ Assess these dimensions:
 - Phase timing: estimate how long each IR phase took and whether the pace was appropriate
 - Communication quality: information sharing, delays, silos, escalation timeliness
 - Role clarity: whether roles were well-defined, IC presence, gaps or overlaps
-- Tool appropriateness: whether the right tools and methods were used
+- Tool appropriateness: whether the right tools and methods were used.
+  Each tactic in the report carries a "confidence" field — use it as follows:
+    * "confirmed": tool output or explicit results were shared in the channel.
+      Treat these as tools that were definitely used; evaluate their appropriateness.
+    * "inferred": a participant mentioned using the tool but shared no output.
+      Note these as likely used but acknowledge the lack of direct evidence.
+    * "suggested": proposed as a recommendation only; do NOT treat as having been used.
+  Base your overall tool_appropriateness assessment only on "confirmed" tactics.
+  If the only evidence for a tool is "inferred" or "suggested", say so explicitly.
 - Strengths: concrete things the team did well
 - Improvements: specific, actionable suggestions for next time
 - Next-incident checklist: prioritised preparation items

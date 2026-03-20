@@ -84,6 +84,22 @@ def test_system_prompt_mentions_phases():
         assert phase in prompt
 
 
+def test_system_prompt_explains_confidence_levels():
+    """Reviewer must know the 3 confidence levels and how to treat each."""
+    prompt = _build_system_prompt()
+    for level in ("confirmed", "inferred", "suggested"):
+        assert level in prompt, f"confidence level '{level}' missing from reviewer prompt"
+
+
+def test_system_prompt_warns_against_evaluating_suggested_as_used():
+    """Reviewer must not treat suggested-only tactics as having been executed."""
+    prompt = _build_system_prompt()
+    # The prompt should explicitly say suggested tactics were not used
+    assert "suggested" in prompt
+    # The instruction to base evaluation only on confirmed tactics must be present
+    assert "confirmed" in prompt
+
+
 # ---------------------------------------------------------------------------
 # _format_report_for_review
 # ---------------------------------------------------------------------------
