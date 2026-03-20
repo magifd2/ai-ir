@@ -57,3 +57,6 @@ credentials.json
 
 # Reference materials (not project artifacts)
 external/
+
+# Simulation / sample data (not committed)
+sample/
