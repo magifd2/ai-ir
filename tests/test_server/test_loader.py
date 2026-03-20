@@ -3,7 +3,7 @@ import json
 import yaml
 import pytest
 from pathlib import Path
-from aiir.server.loader import scan_reports, scan_tactics, load_report, load_tactic, load_report_by_id
+from aiir.server.loader import scan_reports, scan_tactics, load_report, load_tactic, load_report_by_id, load_review
 
 SAMPLE_REPORT = {
     "channel": "#test",
@@ -132,3 +132,49 @@ def test_load_report_by_id_falls_back_to_en(tmp_path):
 
 def test_load_report_by_id_unknown_id(tmp_path):
     assert load_report_by_id(tmp_path, "nonexistent000", lang="en") is None
+
+
+SAMPLE_REVIEW = {
+    "incident_id": "abc123",
+    "channel": "#test",
+    "overall_score": "good",
+    "phases": [{"phase": "detection", "estimated_duration": "5m", "quality": "good", "notes": ""}],
+    "communication": {"overall": "good", "delays_observed": [], "silos_observed": []},
+    "role_clarity": {"ic_identified": True, "ic_name": "alice", "gaps": [], "overlaps": []},
+    "tool_appropriateness": "good",
+    "strengths": [],
+    "improvements": [],
+    "checklist": [],
+}
+
+import json as _json
+
+def test_load_review_returns_data(tmp_path):
+    (tmp_path / "report.json").write_text(_json.dumps(SAMPLE_REPORT))
+    (tmp_path / "report.review.json").write_text(_json.dumps(SAMPLE_REVIEW))
+    result = load_review(tmp_path, "report.json")
+    assert result is not None
+    assert result["overall_score"] == "good"
+
+
+def test_load_review_returns_none_when_missing(tmp_path):
+    (tmp_path / "report.json").write_text(_json.dumps(SAMPLE_REPORT))
+    assert load_review(tmp_path, "report.json") is None
+
+
+def test_load_review_ignores_invalid_json(tmp_path):
+    (tmp_path / "report.json").write_text(_json.dumps(SAMPLE_REPORT))
+    (tmp_path / "report.review.json").write_text("not json {{{")
+    assert load_review(tmp_path, "report.json") is None
+
+
+def test_load_review_strips_lang_suffix(tmp_path):
+    """report.ja.json should resolve to report.review.json."""
+    (tmp_path / "report.ja.json").write_text(_json.dumps(SAMPLE_REPORT))
+    (tmp_path / "report.review.json").write_text(_json.dumps(SAMPLE_REVIEW))
+    result = load_review(tmp_path, "report.ja.json")
+    assert result is not None
+
+
+def test_load_review_path_traversal(tmp_path):
+    assert load_review(tmp_path, "../../etc/passwd.json") is None

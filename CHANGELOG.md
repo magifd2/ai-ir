@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-20
+
+### Added
+- **`aiir review` command**: Analyze a completed report JSON and generate a structured
+  assessment of the incident response *process* (not the technical content).
+  Evaluates phase timing, communication quality, role clarity, tool appropriateness,
+  strengths, and concrete improvement suggestions. Outputs `<stem>.review.json` by
+  default so the web dashboard can display it automatically.
+- **`src/aiir/analyze/reviewer.py`**: New module with `review_incident()` and
+  `format_review_markdown()`. Unlike other analysis modules, it does not re-send raw
+  Slack message text to the LLM — only the already-structured report sections
+  (summary/activity/roles/tactics) are used, reducing token consumption and
+  prompt injection risk.
+- **`IncidentReview` models** in `models.py`: `ResponsePhase`, `CommunicationAssessment`,
+  `RoleClarity`, `ChecklistItem`, `IncidentReview`.
+- **`load_review()` in `server/loader.py`**: Load `<stem>.review.json` alongside a
+  report, with path traversal prevention and language-suffix stripping
+  (e.g. `report.ja.json` → `report.review.json`).
+- **「対応評価」tab in web UI**: When a `.review.json` file is present, a new tab appears
+  in the report detail view showing phase assessment table, communication/role clarity
+  cards, strengths/improvements columns, and a prioritised next-incident checklist.
+  The tab is hidden when no review file exists.
+- 19 new tests covering reviewer prompt structure, report formatting, model validation,
+  loader review loading, and route tab visibility.
+
 ## [1.0.3] - 2026-03-20
 
 ### Added

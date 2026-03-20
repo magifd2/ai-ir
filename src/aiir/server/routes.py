@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from aiir.server.loader import (
     load_report,
     load_report_by_id,
+    load_review,
     load_tactic,
     scan_reports,
     scan_tactics,
@@ -106,15 +107,19 @@ async def report_view(
         for code in sorted(langs.keys())
     ]
 
+    report_path = report.get("_path", path)
+    review = load_review(data_dir, report_path)
+
     return request.app.state.templates.TemplateResponse(
         request,
         "report.html",
         {
             "report": report,
-            "path": report.get("_path", path),
+            "path": report_path,
             "lang_links": lang_links,
             "current_lang": current_lang,
             "incident_id": incident_id,
+            "review": review,
         },
     )
 

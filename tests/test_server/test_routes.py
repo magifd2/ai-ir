@@ -132,6 +132,41 @@ def test_strip_at(name, expected):
     assert _strip_at(name) == expected
 
 
+SAMPLE_REVIEW = {
+    "incident_id": "abc123",
+    "channel": "#test",
+    "overall_score": "good",
+    "phases": [{"phase": "detection", "estimated_duration": "5m", "quality": "good", "notes": ""}],
+    "communication": {"overall": "good", "delays_observed": [], "silos_observed": []},
+    "role_clarity": {"ic_identified": True, "ic_name": "alice", "gaps": [], "overlaps": []},
+    "tool_appropriateness": "good",
+    "strengths": ["Quick response"],
+    "improvements": ["Better runbook"],
+    "checklist": [{"item": "Check alerts", "priority": "high"}],
+}
+
+
+def test_report_view_shows_review_tab_when_present(tmp_path):
+    """対応評価タブは review JSON が存在するときのみ表示される。"""
+    import json as _json
+    (tmp_path / "report.json").write_text(_json.dumps(SAMPLE_REPORT))
+    (tmp_path / "report.review.json").write_text(_json.dumps(SAMPLE_REVIEW))
+    app = create_app(tmp_path)
+    from fastapi.testclient import TestClient
+    c = TestClient(app)
+    resp = c.get("/report?path=report.json")
+    assert resp.status_code == 200
+    assert "対応評価" in resp.text
+    assert "Quick response" in resp.text
+
+
+def test_report_view_hides_review_tab_when_absent(client):
+    """review JSON がない場合、対応評価タブは表示されない。"""
+    resp = client.get("/report?path=report.json")
+    assert resp.status_code == 200
+    assert "対応評価" not in resp.text
+
+
 def test_report_view_no_double_at_for_bot(tmp_path):
     """Bot usernames starting with '@' must not render as '@@' in the report view."""
     report = dict(SAMPLE_REPORT)

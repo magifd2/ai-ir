@@ -41,6 +41,10 @@
       class="py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">役割・関係性</button>
     <button onclick="showTab('tactics')" id="tab-tactics"
       class="py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">抽出戦術</button>
+    {% if review %}
+    <button onclick="showTab('review')" id="tab-review"
+      class="py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">対応評価</button>
+    {% endif %}
   </nav>
 </div>
 
@@ -225,6 +229,179 @@
   {% endif %}
 </div>
 
+<!-- Review Tab -->
+{% if review %}
+{% set score_colors = {"excellent": "green", "good": "blue", "adequate": "yellow", "poor": "red"} %}
+{% set score_color = score_colors.get(review.get("overall_score",""), "gray") %}
+<div id="pane-review" class="hidden space-y-6">
+
+  <!-- Overall score -->
+  <div class="bg-white rounded-lg shadow p-6 flex items-center gap-4">
+    <div>
+      <h2 class="font-semibold text-gray-700 mb-1">総合評価</h2>
+      <span class="text-2xl font-bold text-{{ score_color }}-600">{{ review.get("overall_score","—")|upper }}</span>
+    </div>
+    <div class="ml-4 text-sm text-gray-500">
+      channel: {{ review.get("channel","") }}
+    </div>
+  </div>
+
+  <!-- Phase assessment -->
+  {% if review.get("phases") %}
+  <div class="bg-white rounded-lg shadow p-6">
+    <h2 class="font-semibold text-gray-700 mb-3">フェーズ別評価</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="bg-gray-50">
+          <th class="text-left px-3 py-2 text-gray-500 font-medium">フェーズ</th>
+          <th class="text-left px-3 py-2 text-gray-500 font-medium">推定時間</th>
+          <th class="text-left px-3 py-2 text-gray-500 font-medium">評価</th>
+          <th class="text-left px-3 py-2 text-gray-500 font-medium">備考</th>
+        </tr></thead>
+        <tbody>
+          {% for ph in review.get("phases", []) %}
+          {% set qcolors = {"good":"green","adequate":"yellow","poor":"red","unknown":"gray"} %}
+          {% set qc = qcolors.get(ph.get("quality","unknown"), "gray") %}
+          <tr class="border-t border-gray-100 hover:bg-gray-50">
+            <td class="px-3 py-2 font-medium capitalize">{{ ph.get("phase","") }}</td>
+            <td class="px-3 py-2 font-mono text-xs text-gray-500">{{ ph.get("estimated_duration","") }}</td>
+            <td class="px-3 py-2">
+              <span class="text-xs px-2 py-0.5 rounded bg-{{ qc }}-100 text-{{ qc }}-700">
+                {{ ph.get("quality","").upper() }}
+              </span>
+            </td>
+            <td class="px-3 py-2 text-gray-600">{{ ph.get("notes","") }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Communication + Role clarity (2 columns) -->
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="font-semibold text-gray-700 mb-3">コミュニケーション品質</h2>
+      {% set comm = review.get("communication", {}) %}
+      {% if comm.get("overall") %}
+      <p class="text-gray-700 mb-3">{{ comm.get("overall") }}</p>
+      {% endif %}
+      {% if comm.get("delays_observed") %}
+      <p class="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">遅延</p>
+      <ul class="text-sm text-gray-600 space-y-1 mb-3">
+        {% for d in comm.get("delays_observed", []) %}
+        <li class="border-l-2 border-red-200 pl-2">{{ d }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if comm.get("silos_observed") %}
+      <p class="text-xs font-semibold text-yellow-600 uppercase tracking-wide mb-1">サイロ</p>
+      <ul class="text-sm text-gray-600 space-y-1">
+        {% for s in comm.get("silos_observed", []) %}
+        <li class="border-l-2 border-yellow-200 pl-2">{{ s }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if not comm.get("overall") and not comm.get("delays_observed") and not comm.get("silos_observed") %}
+      <p class="text-gray-400 text-sm">—</p>
+      {% endif %}
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="font-semibold text-gray-700 mb-3">役割の明確さ</h2>
+      {% set rc = review.get("role_clarity", {}) %}
+      <p class="text-sm mb-3">
+        <span class="font-medium">IC:</span>
+        {% if rc.get("ic_identified") and rc.get("ic_name") %}
+        <span class="text-green-700">@{{ rc.get("ic_name","") | strip_at }}</span>
+        {% elif rc.get("ic_identified") %}
+        <span class="text-green-700">確認済み</span>
+        {% else %}
+        <span class="text-red-600">不明確</span>
+        {% endif %}
+      </p>
+      {% if rc.get("gaps") %}
+      <p class="text-xs font-semibold text-red-600 uppercase tracking-wide mb-1">役割の空白</p>
+      <ul class="text-sm text-gray-600 space-y-1 mb-3">
+        {% for g in rc.get("gaps", []) %}
+        <li class="border-l-2 border-red-200 pl-2">{{ g }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if rc.get("overlaps") %}
+      <p class="text-xs font-semibold text-yellow-600 uppercase tracking-wide mb-1">役割の重複</p>
+      <ul class="text-sm text-gray-600 space-y-1">
+        {% for o in rc.get("overlaps", []) %}
+        <li class="border-l-2 border-yellow-200 pl-2">{{ o }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Tool appropriateness -->
+  {% if review.get("tool_appropriateness") %}
+  <div class="bg-white rounded-lg shadow p-6">
+    <h2 class="font-semibold text-gray-700 mb-2">ツール選択の適切さ</h2>
+    <p class="text-gray-700">{{ review.get("tool_appropriateness") }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Strengths + Improvements (2 columns) -->
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="font-semibold text-green-700 mb-3">💪 強み</h2>
+      {% if review.get("strengths") %}
+      <ul class="space-y-2">
+        {% for s in review.get("strengths", []) %}
+        <li class="flex gap-2 text-sm text-gray-700">
+          <span class="text-green-500 mt-0.5">✓</span>{{ s }}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-gray-400 text-sm">—</p>
+      {% endif %}
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="font-semibold text-orange-700 mb-3">📋 改善提案</h2>
+      {% if review.get("improvements") %}
+      <ul class="space-y-2">
+        {% for i in review.get("improvements", []) %}
+        <li class="flex gap-2 text-sm text-gray-700">
+          <span class="text-orange-400 mt-0.5">→</span>{{ i }}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-gray-400 text-sm">—</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Next-incident checklist -->
+  {% if review.get("checklist") %}
+  <div class="bg-white rounded-lg shadow p-6">
+    <h2 class="font-semibold text-gray-700 mb-4">次回インシデント向けチェックリスト</h2>
+    <ul class="space-y-2">
+      {% for item in review.get("checklist", []) %}
+      {% set pcolors = {"high": "red", "medium": "yellow", "low": "gray"} %}
+      {% set pc = pcolors.get(item.get("priority","medium"), "gray") %}
+      <li class="flex items-start gap-3">
+        <span class="text-xs px-1.5 py-0.5 rounded bg-{{ pc }}-100 text-{{ pc }}-700 font-mono whitespace-nowrap mt-0.5">
+          {{ item.get("priority","medium")|upper }}
+        </span>
+        <span class="text-sm text-gray-700">{{ item.get("item","") }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+</div>
+{% endif %}
+
 <script>
 // Convert UTC timestamps to browser local time
 document.querySelectorAll('.utc-ts').forEach(el => {
@@ -242,7 +419,7 @@ document.querySelectorAll('.utc-ts').forEach(el => {
 });
 
 function showTab(name) {
-  const panes = ['summary','activity','roles','tactics'];
+  const panes = ['summary','activity','roles','tactics'{% if review %},'review'{% endif %}];
   panes.forEach(p => {
     document.getElementById('pane-'+p).classList.toggle('hidden', p !== name);
     const btn = document.getElementById('tab-'+p);

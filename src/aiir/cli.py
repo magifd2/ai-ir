@@ -708,6 +708,83 @@ def translate(report_file: Path, lang: str, output: Path | None) -> None:
 
 
 # ---------------------------------------------------------------------------
+# review command
+# ---------------------------------------------------------------------------
+
+
+@main.command()
+@click.argument("report_file", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output file (default: <stem>.review.json next to input).",
+)
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["json", "markdown"]),
+    default="json",
+    help="Output format (default: json for Web UI compatibility).",
+)
+def review(report_file: Path, output: Path | None, fmt: str) -> None:
+    """Evaluate the quality of an incident response process.
+
+    Analyzes a completed report JSON (produced by 'aiir report --format json')
+    and generates a structured assessment of how well the team responded:
+    phase timing, communication quality, role clarity, and concrete improvement
+    suggestions for the next incident.
+
+    The output is saved as <stem>.review.json by default so the web dashboard
+    can display it automatically alongside the report.
+
+    Example:
+
+        aiir review report.json
+        aiir review report.json --format markdown -o review.md
+    """
+    from aiir.analyze.reviewer import format_review_markdown, review_incident
+
+    with open(report_file, encoding="utf-8") as f:
+        report_data = json.load(f)
+
+    if "summary" not in report_data or "tactics" not in report_data:
+        err_console.print(
+            "[red][ERROR] Input does not look like an aiir report JSON "
+            "(missing 'summary' or 'tactics' keys).[/red]"
+        )
+        sys.exit(1)
+
+    if output is None and fmt == "json":
+        output = report_file.parent / f"{report_file.stem}.review.json"
+
+    client = _get_llm_client()
+
+    err_console.print("[cyan]Evaluating incident response process quality...[/cyan]")
+    review_result = review_incident(report_data, client)
+
+    if fmt == "json":
+        content = json.dumps(review_result.model_dump(), indent=2, ensure_ascii=False)
+    else:
+        content = format_review_markdown(review_result)
+
+    _write_output(content, output)
+
+    err_console.print(
+        Panel(
+            f"Channel:       {review_result.channel}\n"
+            f"Overall score: {review_result.overall_score or '—'}\n"
+            f"Phases:        {len(review_result.phases)}\n"
+            f"Strengths:     {len(review_result.strengths)}\n"
+            f"Improvements:  {len(review_result.improvements)}\n"
+            f"Checklist:     {len(review_result.checklist)} items",
+            title="[bold green]Review Complete[/bold green]",
+        )
+    )
+
+
+# ---------------------------------------------------------------------------
 # serve command
 # ---------------------------------------------------------------------------
 

@@ -178,6 +178,59 @@ class RoleAnalysis(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Process review models
+# ---------------------------------------------------------------------------
+
+
+class ResponsePhase(BaseModel):
+    """Estimated duration and quality assessment for one IR phase."""
+
+    phase: str  # e.g. "detection", "initial_response", "containment", "resolution"
+    estimated_duration: str = ""  # human-readable, e.g. "~15 minutes", "unknown"
+    quality: str = "unknown"  # "good" | "adequate" | "poor" | "unknown"
+    notes: str = ""
+
+
+class CommunicationAssessment(BaseModel):
+    """Quality of communication and information sharing during the incident."""
+
+    overall: str = ""
+    delays_observed: list[str] = []
+    silos_observed: list[str] = []
+
+
+class RoleClarity(BaseModel):
+    """Assessment of role clarity and coverage during the incident."""
+
+    ic_identified: bool = False
+    ic_name: Optional[str] = None
+    gaps: list[str] = []
+    overlaps: list[str] = []
+
+
+class ChecklistItem(BaseModel):
+    """A single action item for the next incident."""
+
+    item: str
+    priority: str = "medium"  # "high" | "medium" | "low"
+
+
+class IncidentReview(BaseModel):
+    """Structured quality review of an incident response process."""
+
+    incident_id: str = ""
+    channel: str = ""
+    overall_score: Optional[str] = None  # "excellent"|"good"|"adequate"|"poor"
+    phases: list[ResponsePhase] = []
+    communication: CommunicationAssessment = CommunicationAssessment()
+    role_clarity: RoleClarity = RoleClarity()
+    tool_appropriateness: str = ""
+    strengths: list[str] = []
+    improvements: list[str] = []
+    checklist: list[ChecklistItem] = []
+
+
+# ---------------------------------------------------------------------------
 # Knowledge models
 # ---------------------------------------------------------------------------
 

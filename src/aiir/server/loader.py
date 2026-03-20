@@ -115,6 +115,36 @@ def load_report_by_id(data_dir: Path, incident_id: str, lang: str = "en") -> dic
     return None
 
 
+def load_review(data_dir: Path, report_rel_path: str) -> dict | None:
+    """Load a process review JSON for the given report path.
+
+    Looks for ``<stem>.review.json`` alongside the report file.
+    Returns ``None`` if not found, unreadable, or not a valid review dict.
+
+    Args:
+        data_dir: Base directory for path traversal prevention.
+        report_rel_path: Relative path of the report JSON file.
+    """
+    try:
+        report_path = Path(report_rel_path)
+        # Strip language suffix (e.g. report.ja.json → report.review.json)
+        stem = report_path.stem  # "report.ja" or "report"
+        if "." in stem:
+            stem = stem.rsplit(".", 1)[0]
+        review_rel = str(report_path.parent / f"{stem}.review.json")
+        target = (data_dir / review_rel).resolve()
+        if not str(target).startswith(str(data_dir.resolve())):
+            return None
+        if not target.exists():
+            return None
+        data = json.loads(target.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and "phases" in data:
+            return data
+    except Exception:
+        pass
+    return None
+
+
 def load_tactic(data_dir: Path, rel_path: str) -> dict | None:
     """Load a single tactic YAML by its relative path. Prevents path traversal."""
     try:
