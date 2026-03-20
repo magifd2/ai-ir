@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-03-20
+
+### Fixed
+- **`aiir review` tool appropriateness over-reporting**: The reviewer prompt was
+  treating `inferred` and `suggested` tactics as confirmed tool usage, leading to
+  inflated tool_appropriateness assessments. The prompt now instructs the LLM to
+  base its evaluation only on `confirmed` tactics (where actual output was shared),
+  note `inferred` tactics as lacking direct evidence, and exclude `suggested`
+  tactics entirely from the usage assessment.
+
 ## [1.3.0] - 2026-03-20
 
 ### Added
