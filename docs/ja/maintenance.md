@@ -12,6 +12,7 @@
 4. [知識カテゴリの追加・変更](#4-知識カテゴリの追加変更)
 5. [セキュリティメンテナンス](#5-セキュリティメンテナンス)
 6. [新機能の追加手順](#6-新機能の追加手順)
+6.4. [ナレッジ抽出（aiir report 経由）](#64-ナレッジ抽出aiir-report-経由)
 6.5. [Web UI（aiir serve）](#65-web-uiaiir-serve)
 6.6. [翻訳（aiir translate）](#66-翻訳aiir-translate)
 7. [テスト戦略](#7-テスト戦略)
@@ -263,6 +264,26 @@ export AIIR_LLM_API_KEY=<新しいキー>
 
 ---
 
+## 6.4. ナレッジ抽出（aiir report 経由）
+
+v0.5.0 で `aiir knowledge` コマンドを廃止しました。以前はレポートとは独立した LLM コールを実行していたため、
+抽出されるタクティクスの件数が一致しないという問題がありました。
+
+代わりに `aiir report` のオプションを使用してください：
+
+```bash
+# フルレポート + YAML タクティクスを同時保存（推奨）
+aiir report preprocessed.json --format json -o report.json --knowledge-dir ./knowledge
+
+# タクティクスのみ抽出（サマリ・活動・ロール分析はスキップ）
+aiir report preprocessed.json --knowledge-only --knowledge-dir ./knowledge
+```
+
+`--knowledge-dir` はレポートと同じ LLM コールを共有するため、`report.json` の tactics 件数と
+YAML ファイルの件数は常に一致します。
+
+---
+
 ## 6.5. Web UI（`aiir serve`）
 
 `aiir serve` コマンドは、レポートとナレッジ文書を閲覧するための読み取り専用ローカル Web サーバーを起動します。
@@ -303,7 +324,7 @@ aiir serve --no-browser
 | 症状 | 想定原因 | 対処 |
 |---|---|---|
 | レポートが表示されない | JSON 形式が期待と異なる | `aiir report` を先に実行、`summary`+`tactics` キーを確認 |
-| 戦術が表示されない | YAML の id フィールドに `tac-` プレフィックスがない | フォーマッタ出力を確認、`aiir knowledge` を再実行 |
+| 戦術が表示されない | YAML の id フィールドに `tac-` プレフィックスがない | フォーマッタ出力を確認、`aiir report --knowledge-only -k ./knowledge` を再実行 |
 | ポートが使用中 | ポート 8765 が別プロセスに占有されている | `--port <他のポート>` を使用 |
 
 ---

@@ -12,6 +12,7 @@ This document describes procedures for maintaining and improving the ai-ir tools
 4. [Adding and Changing Knowledge Categories](#4-adding-and-changing-knowledge-categories)
 5. [Security Maintenance](#5-security-maintenance)
 6. [Adding New Features](#6-adding-new-features)
+6.4. [Knowledge Extraction via `aiir report`](#64-knowledge-extraction-via-aiir-report)
 6.5. [Web UI (`aiir serve`)](#65-web-ui-aiir-serve)
 6.6. [Translation (`aiir translate`)](#66-translation-aiir-translate)
 7. [Test Strategy](#7-test-strategy)
@@ -265,6 +266,27 @@ Currently only the scat/stail JSON export format is supported. To support a new 
 
 ---
 
+## 6.4. Knowledge Extraction via `aiir report`
+
+The standalone `aiir knowledge` command was removed in v0.5.0 to prevent inconsistency
+between the knowledge base and reports (they previously made independent LLM calls and
+could return different numbers of tactics).
+
+Use `aiir report` instead:
+
+```bash
+# Full report + save tactics as YAML in one command (recommended)
+aiir report preprocessed.json --format json -o report.json --knowledge-dir ./knowledge
+
+# Tactics only (skip summary / activity / roles)
+aiir report preprocessed.json --knowledge-only --knowledge-dir ./knowledge
+```
+
+Because `--knowledge-dir` shares the same LLM call as the report, the number of tactics
+in `report.json` and in the YAML files is always identical.
+
+---
+
 ## 6.5. Web UI (`aiir serve`)
 
 The `aiir serve` command starts a read-only local web server for browsing reports and
@@ -307,7 +329,7 @@ The server recursively scans the data directory for:
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | No reports shown | Reports not in expected JSON format | Run `aiir report` first; check file has `summary`+`tactics` keys |
-| No tactics shown | YAML id field missing `tac-` prefix | Check formatter output; re-run `aiir knowledge` |
+| No tactics shown | YAML id field missing `tac-` prefix | Check formatter output; re-run `aiir report --knowledge-only -k ./knowledge` |
 | Port already in use | Another process on port 8765 | Use `--port <other>` |
 
 ---

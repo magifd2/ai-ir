@@ -84,25 +84,28 @@ uv run aiir activity incident.json -o activity.md
 # Infer participant roles and relationships
 uv run aiir roles incident.json -o roles.md
 
-# Extract reusable tactics as YAML knowledge documents
-uv run aiir knowledge incident.json --output-dir ./knowledge/
+# Generate full report (JSON) and save tactics as YAML knowledge docs simultaneously
+uv run aiir report incident.json --format json -o report.json -k ./knowledge/
 
-# Generate full report
+# Generate full report (Markdown)
 uv run aiir report incident.json -o report.md
-uv run aiir report incident.json --format json -o report.json
+
+# Extract tactics only (no full report)
+uv run aiir report incident.json --knowledge-only -k ./knowledge/
 ```
 
 ### Full pipeline example
 
 ```bash
-# Preprocess once, then run multiple analyses
+# Preprocess once, then run all analyses
 uv run aiir ingest incident.json -o preprocessed.json
 
 uv run aiir summarize preprocessed.json -o summary.md
 uv run aiir activity preprocessed.json -o activity.md
 uv run aiir roles preprocessed.json -o roles.md
-uv run aiir knowledge preprocessed.json -d ./knowledge/
-uv run aiir report preprocessed.json -o full-report.md
+
+# Full report + knowledge docs in one step
+uv run aiir report preprocessed.json --format json -o report.json -k ./knowledge/
 ```
 
 ### Step 3: Translate the report (optional)
