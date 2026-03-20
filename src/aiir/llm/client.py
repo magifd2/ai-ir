@@ -12,22 +12,48 @@ from openai import OpenAI
 from aiir.config import LLMConfig
 
 
-def _strip_think_tags(text: str) -> str:
-    """Remove <think>...</think> reasoning blocks emitted by some LLMs.
+# Tags whose entire content should be discarded (reasoning/thinking blocks).
+# Covers: DeepSeek-R1/QwQ/Llama (<think>), Claude extended thinking (<thinking>),
+# generic reasoning models (<reasoning>, <reflection>, <scratchpad>, <analysis>).
+_REASONING_TAGS = r"think|thinking|reasoning|reflection|scratchpad|analysis"
 
-    Handles both closed blocks (DeepSeek-R1, QwQ) and unclosed blocks
-    (truncated output or models that omit the closing tag).
+_RE_CLOSED = re.compile(
+    rf"<({_REASONING_TAGS})>.*?</\1>", re.DOTALL | re.IGNORECASE
+)
+_RE_UNCLOSED = re.compile(
+    rf"<(?:{_REASONING_TAGS})>.*$", re.DOTALL | re.IGNORECASE
+)
+# Mistral uses square-bracket tokens: [THINK]...[/THINK]
+_RE_MISTRAL = re.compile(r"\[THINK\].*?\[/THINK\]", re.DOTALL | re.IGNORECASE)
+# DeepSeek-R1 / Hunyuan wrap the final answer in <answer>...</answer>.
+# Extract the content rather than discarding it.
+_RE_ANSWER = re.compile(r"<answer>(.*?)</answer>", re.DOTALL | re.IGNORECASE)
+
+
+def _strip_reasoning_blocks(text: str) -> str:
+    """Remove reasoning/thinking blocks emitted by various LLM models.
+
+    Handles:
+    - ``<think>``, ``<thinking>``, ``<reasoning>``, ``<reflection>``,
+      ``<scratchpad>``, ``<analysis>`` — closed and unclosed variants
+      (DeepSeek-R1, QwQ, Llama, Claude extended thinking, …)
+    - ``[THINK]…[/THINK]`` — Mistral square-bracket format
+    - ``<answer>…</answer>`` — DeepSeek-R1/Hunyuan answer wrapper:
+      content is *extracted* (not discarded)
 
     Args:
         text: Raw LLM response text.
 
     Returns:
-        Text with thinking blocks removed and surrounding whitespace stripped.
+        Text with reasoning blocks removed and surrounding whitespace stripped.
     """
-    # Remove complete <think>...</think> blocks (DOTALL: . matches newlines)
-    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
-    # Remove unclosed <think> block (opening tag through end of string)
-    text = re.sub(r"<think>.*$", "", text, flags=re.DOTALL)
+    text = _RE_CLOSED.sub("", text)
+    text = _RE_UNCLOSED.sub("", text)
+    text = _RE_MISTRAL.sub("", text)
+    # If an <answer> wrapper remains, extract its content.
+    m = _RE_ANSWER.search(text)
+    if m:
+        text = m.group(1)
     return text.strip()
 
 
@@ -103,6 +129,6 @@ class LLMClient:
         except openai.BadRequestError:
             # Endpoint does not support json_object mode; rely on prompt alone.
             raw = self.complete(system_prompt, user_prompt)
-        # Normalize: strip <think> blocks, markdown code fences, and repair
+        # Normalize: strip reasoning blocks, markdown code fences, and repair
         # minor JSON issues (reasoning models and some local LLMs add these).
-        return repair_json(_strip_think_tags(raw or ""))
+        return repair_json(_strip_reasoning_blocks(raw or ""))
