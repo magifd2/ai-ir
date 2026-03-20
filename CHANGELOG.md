@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-03-20
+
+First official release. Consolidates all pre-release development (v0.1.0–v0.5.0)
+into a stable, feature-complete toolset.
+
+### Highlights
+- Full incident analysis pipeline: `ingest` → `summarize` / `activity` / `roles` → `report`
+- Tactic knowledge extraction and YAML knowledge base via `aiir report --knowledge-dir`
+- Multi-language report translation via `aiir translate` (ja / zh / ko / de / fr / es)
+- Incident grouping by `incident_id` with language switcher in the web UI
+- Local read-only web dashboard (`aiir serve`) with report and knowledge browsing
+- Security-first design: IoC defanging, nonce-tagged prompt injection defense
+- OpenAI-compatible LLM client with local LLM support (LM Studio, Ollama, etc.)
+- LLM response normalization: reasoning block stripping, JSON repair, text-mode fallback
+- macOS Keychain integration for API key storage
+- stail NDJSON and scat JSON export format support
+- Bilingual documentation (English / Japanese)
+
 ## [0.5.0] - 2026-03-20
 
 ### Added
