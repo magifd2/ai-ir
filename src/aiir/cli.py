@@ -143,6 +143,67 @@ def _get_llm_client() -> "LLMClient":
     return LLMClient(config)
 
 
+def _estimate_tokens(processed: "ProcessedExport") -> tuple[int, int]:
+    """Estimate the token count of the conversation as it would be sent to an LLM.
+
+    Uses a conservative character-based heuristic:
+    - Per-message overhead (timestamp prefix + nonce tags): ~80 chars
+    - Content: chars / 2.5  (covers Japanese ~1.5 chars/token and English ~4 chars/token mix)
+
+    Args:
+        processed: Preprocessed export to estimate.
+
+    Returns:
+        Tuple of (message_count, estimated_tokens).
+    """
+    total_chars = sum(80 + len(msg.text) for msg in processed.messages)
+    return len(processed.messages), int(total_chars / 2.5)
+
+
+def _warn_large_export(processed: "ProcessedExport") -> None:
+    """Print a context-size warning panel if the export is large.
+
+    Thresholds (estimated tokens):
+    - < 10K : no warning
+    - 10K–30K: caution — approaching local LLM limits
+    - 30K–64K: warning — exceeds typical local LLM limits
+    - > 64K  : critical — requires large-context cloud model
+    """
+    msg_count, est_tokens = _estimate_tokens(processed)
+
+    if est_tokens < 10_000:
+        return
+
+    if est_tokens < 30_000:
+        style, label = "yellow", "CAUTION: LARGE EXPORT"
+        body = (
+            f"Estimated ~{est_tokens:,} tokens  ({msg_count} messages)\n\n"
+            "Local LLMs with small context (< 32K) may produce incomplete results.\n"
+            "Consider a model with ≥ 32K context, or a cloud LLM."
+        )
+    elif est_tokens < 64_000:
+        style, label = "yellow", "WARNING: LARGE EXPORT"
+        body = (
+            f"Estimated ~{est_tokens:,} tokens  ({msg_count} messages)\n\n"
+            "Exceeds typical local LLM limits (8K–32K).\n"
+            "Recommended: cloud LLM with ≥ 64K context\n"
+            "  (e.g. Claude Sonnet 4.5 / 200K, Gemini 2.5 Pro / 1M)."
+        )
+    else:
+        style, label = "red", "WARNING: VERY LARGE EXPORT"
+        body = (
+            f"Estimated ~{est_tokens:,} tokens  ({msg_count} messages)\n\n"
+            "Exceeds most local LLM context windows.\n"
+            "Analysis quality will be poor or the request will fail.\n"
+            "Recommended: large-context cloud model\n"
+            "  Claude Sonnet 4.5 (200K) or Gemini 2.5 Pro (1M tokens)."
+        )
+
+    err_console.print(
+        Panel(body, title=f"[bold {style}]{label}[/bold {style}]", border_style=style)
+    )
+
+
 def _write_output(content: str, output: Path | None) -> None:
     """Write content to file or stdout.
 
@@ -307,6 +368,7 @@ def ingest(input_file: Path, output: Path | None) -> None:
             title="[bold green]Ingest Complete[/bold green]",
         )
     )
+    _warn_large_export(processed)
 
 
 # ---------------------------------------------------------------------------

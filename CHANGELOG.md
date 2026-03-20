@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-03-20
+
+### Added
+- **`aiir ingest` context-size warning**: After preprocessing, estimates the token count
+  of the conversation using a character-based heuristic (chars / 2.5, covering Japanese
+  and English text mix). Prints a colour-coded warning panel if the estimate exceeds a
+  threshold, with model recommendations:
+  - 10K–30K tokens (yellow): caution — approaching local LLM limits (< 32K context)
+  - 30K–64K tokens (yellow): warning — exceeds typical local LLM limits; recommend
+    cloud LLM with ≥ 64K context (Claude Sonnet 4.5 / 200K, Gemini 2.5 Pro / 1M)
+  - > 64K tokens (red): very large export — local LLM analysis will be unreliable;
+    large-context cloud model required
+  - < 10K tokens: no warning displayed
+
 ## [1.0.2] - 2026-03-20
 
 ### Changed
