@@ -1,4 +1,21 @@
-"""Full incident report generator."""
+"""Full incident report generator.
+
+Design note — two Markdown renderers
+--------------------------------------
+Each analysis module (``summarizer``, ``activity``, ``roles``) exposes its own
+``format_*_markdown()`` function that produces a **self-contained** Markdown document
+with top-level H2 headings, suitable for piping to a renderer or saving standalone.
+
+``generate_markdown_report()`` in this module produces a **combined** report where those
+same sections appear as H3 sub-sections under their respective H2 headers.  The rendering
+details also differ intentionally (e.g. confidence labels use prose form "(High confidence)"
+here vs. compact badge "[HIGH]" in the standalone formatter; the relationships table omits
+the Description column for compactness in the combined view).
+
+These two renderers are therefore intentional variants for different output contexts, not
+accidental duplication.  Do not refactor them into a shared implementation without accounting
+for these structural and stylistic differences.
+"""
 
 from __future__ import annotations
 

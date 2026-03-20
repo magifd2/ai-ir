@@ -287,6 +287,25 @@ aiir report preprocessed.json --knowledge-only --knowledge-dir ./knowledge
 Because `--knowledge-dir` shares the same LLM call as the report, the number of tactics
 in `report.json` and in the YAML files is always identical.
 
+### Design Rationale: Sequential LLM Calls in `aiir report`
+
+`aiir report` makes four LLM calls sequentially (summary → activity → roles → tactics).
+This is intentional for the primary deployment target.
+
+**Why:** The primary target is a local [Ollama](https://ollama.com/) instance running on a
+single GPU. Ollama serialises requests to the GPU regardless of how many threads submit them
+concurrently — parallel HTTP calls simply queue at the GPU and produce no speedup. We measured
+this: `translate_report` (4 concurrent calls) improved from 103.7 s to 78.9 s (1.31×), far
+below the theoretical maximum because the GPU was the bottleneck, not the HTTP transport.
+
+`translate_report` and `translate_review` **are** parallelised, because the four translation
+sections are independent and the pattern holds: they translate distinct parts of the same
+document with no shared state.
+
+**For cloud API users** (OpenAI, Anthropic), concurrent analysis calls would yield a 3–4×
+speedup. This can be revisited if cloud deployment becomes a primary use case and users report
+total report generation time as a pain point.
+
 ---
 
 ## 6.5. Web UI (`aiir serve`)
@@ -318,6 +337,25 @@ and verified to remain within the data directory before being read.
 The server recursively scans the data directory for:
 - **Report JSON files** — identified by having both `"summary"` and `"tactics"` keys
 - **Tactic YAML files** — identified by an `id` field starting with `"tac-"`
+
+### Design Rationale: Per-Request Directory Scan (No Cache)
+
+`routes.py` calls `scan_reports()` and `scan_tactics()` on every dashboard request rather than
+caching the results. This is intentional.
+
+**Why:** `aiir serve` is a local read-only tool used by a single analyst. The typical workflow
+is to run `aiir report` or `aiir review` in one terminal while the server is running in another.
+A cached scan would show stale results until the cache expired or was manually invalidated.
+Re-scanning on every request guarantees the dashboard always reflects the current filesystem
+state with no extra steps.
+
+**Performance:** Scanning dozens of JSON/YAML files on a local SSD takes single-digit
+milliseconds — well below the perceptible latency threshold for an interactive tool with no
+concurrent users.
+
+**When to reconsider:** If a user reports noticeable page-load latency with a specific dataset
+size, the correct solution would be filesystem watching (e.g. `watchfiles`) rather than
+time-based expiry caching, as watching avoids staleness entirely.
 
 ### Adding a New Page to the Web UI
 
@@ -491,6 +529,27 @@ Correctness of the analysis logic is ensured by prompt content tests and manual 
 - Recommended test name format: `test_<subject>_<condition>_<expected_result>`
 - Use `pytest.mark.parametrize` actively to cover boundary values, normal values, and error cases
 - Each test function should verify exactly one thing
+
+### Test Scope Boundaries
+
+**Third-party library internals are out of scope.** We test our integration with a library, not
+the library's own behaviour. For example:
+- `json_repair`: We verify that `complete_json()` returns valid JSON for various LLM response
+  formats (reasoning tags, markdown fences). We do not test `repair_json()` directly — that
+  is the library's own responsibility.
+- External validators (Pydantic): We test that our models accept and reject the inputs we care
+  about. We do not test Pydantic's type coercion logic itself.
+
+**Implicit coverage is acceptable when artificial tests would be fragile.** If a function is
+already exercised by higher-level tests that use realistic inputs, adding an isolated test for
+one narrow internal behaviour has diminishing returns — especially if it would need to be
+updated every time the implementation changes for unrelated reasons. The `_overlaps()` guard
+in `defang.py` is one example: it is exercised by the existing defang tests on realistic
+multi-IoC inputs, and a test that constructs an artificial overlap would be tightly coupled to
+the current regex implementation without adding meaningful new coverage.
+
+The guiding question is: **"If this code had a bug, would the existing tests catch it?"**
+If yes, a new test adds maintenance overhead without safety benefit.
 
 ---
 
