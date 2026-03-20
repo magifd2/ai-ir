@@ -178,3 +178,24 @@ def test_load_review_strips_lang_suffix(tmp_path):
 
 def test_load_review_path_traversal(tmp_path):
     assert load_review(tmp_path, "../../etc/passwd.json") is None
+
+
+def test_load_review_prefers_localised_version(tmp_path):
+    """When lang='ja', report.review.ja.json is preferred over report.review.json."""
+    en_review = dict(SAMPLE_REVIEW, overall_score="en_version")
+    ja_review = dict(SAMPLE_REVIEW, overall_score="ja_version", lang="ja")
+    (tmp_path / "report.ja.json").write_text(_json.dumps(SAMPLE_REPORT))
+    (tmp_path / "report.review.json").write_text(_json.dumps(en_review))
+    (tmp_path / "report.review.ja.json").write_text(_json.dumps(ja_review))
+    result = load_review(tmp_path, "report.ja.json", lang="ja")
+    assert result is not None
+    assert result["overall_score"] == "ja_version"
+
+
+def test_load_review_falls_back_to_english_when_no_localised(tmp_path):
+    """When lang='ja' but no .ja. review exists, falls back to report.review.json."""
+    (tmp_path / "report.ja.json").write_text(_json.dumps(SAMPLE_REPORT))
+    (tmp_path / "report.review.json").write_text(_json.dumps(SAMPLE_REVIEW))
+    result = load_review(tmp_path, "report.ja.json", lang="ja")
+    assert result is not None
+    assert result["overall_score"] == "good"

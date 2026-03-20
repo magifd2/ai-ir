@@ -108,7 +108,7 @@ async def report_view(
     ]
 
     report_path = report.get("_path", path)
-    review = load_review(data_dir, report_path)
+    review = load_review(data_dir, report_path, lang=current_lang)
 
     return request.app.state.templates.TemplateResponse(
         request,

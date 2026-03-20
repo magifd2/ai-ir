@@ -115,31 +115,48 @@ def load_report_by_id(data_dir: Path, incident_id: str, lang: str = "en") -> dic
     return None
 
 
-def load_review(data_dir: Path, report_rel_path: str) -> dict | None:
+def _load_review_candidate(data_dir: Path, review_rel: str) -> dict | None:
+    """Load and validate a single review JSON candidate path."""
+    target = (data_dir / review_rel).resolve()
+    if not str(target).startswith(str(data_dir.resolve())):
+        return None
+    if not target.exists():
+        return None
+    data = json.loads(target.read_text(encoding="utf-8"))
+    if isinstance(data, dict) and "phases" in data:
+        return data
+    return None
+
+
+def load_review(data_dir: Path, report_rel_path: str, lang: str = "en") -> dict | None:
     """Load a process review JSON for the given report path.
 
-    Looks for ``<stem>.review.json`` alongside the report file.
-    Returns ``None`` if not found, unreadable, or not a valid review dict.
+    When ``lang`` is not ``"en"``, tries ``<stem>.review.<lang>.json`` first,
+    then falls back to ``<stem>.review.json`` (English).  Returns ``None`` if
+    neither is found, unreadable, or not a valid review dict.
 
     Args:
         data_dir: Base directory for path traversal prevention.
         report_rel_path: Relative path of the report JSON file.
+        lang: Language code of the report being viewed (e.g. ``"ja"``).
     """
     try:
         report_path = Path(report_rel_path)
-        # Strip language suffix (e.g. report.ja.json → report.review.json)
+        # Strip language suffix (e.g. "report.ja" → "report")
         stem = report_path.stem  # "report.ja" or "report"
         if "." in stem:
             stem = stem.rsplit(".", 1)[0]
-        review_rel = str(report_path.parent / f"{stem}.review.json")
-        target = (data_dir / review_rel).resolve()
-        if not str(target).startswith(str(data_dir.resolve())):
-            return None
-        if not target.exists():
-            return None
-        data = json.loads(target.read_text(encoding="utf-8"))
-        if isinstance(data, dict) and "phases" in data:
-            return data
+
+        # Try localised review first, then fall back to English
+        candidates = []
+        if lang and lang != "en":
+            candidates.append(str(report_path.parent / f"{stem}.review.{lang}.json"))
+        candidates.append(str(report_path.parent / f"{stem}.review.json"))
+
+        for review_rel in candidates:
+            result = _load_review_candidate(data_dir, review_rel)
+            if result is not None:
+                return result
     except Exception:
         pass
     return None
