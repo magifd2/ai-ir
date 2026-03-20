@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import openai
@@ -9,6 +10,25 @@ from json_repair import repair_json
 from openai import OpenAI
 
 from aiir.config import LLMConfig
+
+
+def _strip_think_tags(text: str) -> str:
+    """Remove <think>...</think> reasoning blocks emitted by some LLMs.
+
+    Handles both closed blocks (DeepSeek-R1, QwQ) and unclosed blocks
+    (truncated output or models that omit the closing tag).
+
+    Args:
+        text: Raw LLM response text.
+
+    Returns:
+        Text with thinking blocks removed and surrounding whitespace stripped.
+    """
+    # Remove complete <think>...</think> blocks (DOTALL: . matches newlines)
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    # Remove unclosed <think> block (opening tag through end of string)
+    text = re.sub(r"<think>.*$", "", text, flags=re.DOTALL)
+    return text.strip()
 
 
 class LLMClient:
@@ -83,6 +103,6 @@ class LLMClient:
         except openai.BadRequestError:
             # Endpoint does not support json_object mode; rely on prompt alone.
             raw = self.complete(system_prompt, user_prompt)
-        # Normalize: strip markdown code fences and repair minor JSON issues
-        # (some local LLMs wrap output in ```json ... ``` even in text mode).
-        return repair_json(raw or "")
+        # Normalize: strip <think> blocks, markdown code fences, and repair
+        # minor JSON issues (reasoning models and some local LLMs add these).
+        return repair_json(_strip_think_tags(raw or ""))

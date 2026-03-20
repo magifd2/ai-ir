@@ -6,7 +6,7 @@ import openai
 import pytest
 
 from aiir.config import LLMConfig
-from aiir.llm.client import LLMClient
+from aiir.llm.client import LLMClient, _strip_think_tags
 
 
 def _make_config(**kwargs) -> LLMConfig:
@@ -204,3 +204,50 @@ def test_complete_json_falls_back_to_text_on_bad_request():
     # Second call must not have response_format
     second_call_kwargs = mock_openai.chat.completions.create.call_args_list[1][1]
     assert "response_format" not in second_call_kwargs
+
+
+# ---------------------------------------------------------------------------
+# _strip_think_tags
+# ---------------------------------------------------------------------------
+
+
+def test_strip_think_tags_removes_closed_block():
+    """Closed <think>...</think> block is removed."""
+    raw = "<think>\nLet me reason...\n</think>\n{\"result\": 1}"
+    assert _strip_think_tags(raw) == '{"result": 1}'
+
+
+def test_strip_think_tags_removes_unclosed_block():
+    """Unclosed <think> block (truncated output) is removed entirely."""
+    raw = "<think>\nReasoning that never ends..."
+    assert _strip_think_tags(raw) == ""
+
+
+def test_strip_think_tags_no_tags_unchanged():
+    """Text without think tags is returned unchanged (stripped)."""
+    raw = '{"key": "value"}'
+    assert _strip_think_tags(raw) == '{"key": "value"}'
+
+
+def test_strip_think_tags_multiple_blocks():
+    """Multiple <think> blocks are all removed."""
+    raw = "<think>first</think>\n<think>second</think>\n{\"ok\": true}"
+    assert _strip_think_tags(raw) == '{"ok": true}'
+
+
+def test_complete_json_strips_think_tags():
+    """complete_json strips <think> blocks before returning JSON."""
+    config = _make_config()
+    raw_with_think = "<think>\nAnalyzing...\n</think>\n{\"title\": \"incident\"}"
+
+    with patch("aiir.llm.client.OpenAI") as mock_openai_cls:
+        mock_openai = MagicMock()
+        mock_openai_cls.return_value = mock_openai
+        mock_openai.chat.completions.create.return_value = _make_mock_response(
+            raw_with_think
+        )
+        client = LLMClient(config)
+        result = client.complete_json("sys", "user")
+
+    import json
+    assert json.loads(result)["title"] == "incident"
