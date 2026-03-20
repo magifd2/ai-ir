@@ -105,6 +105,28 @@ def test_tactic_to_yaml_key_order():
     assert first_key_line.startswith("id:")
 
 
+def test_tactic_to_yaml_confidence_default():
+    """Confidence defaults to 'inferred' and appears in YAML."""
+    tactic = _make_tactic()
+    data = yaml.safe_load(tactic_to_yaml(tactic))
+    assert data["confidence"] == "inferred"
+
+
+def test_tactic_to_yaml_confidence_confirmed():
+    """Confirmed confidence is preserved in YAML."""
+    tactic = _make_tactic(confidence="confirmed", evidence="alice pasted grep output at 10:15")
+    data = yaml.safe_load(tactic_to_yaml(tactic))
+    assert data["confidence"] == "confirmed"
+    assert data["evidence"] == "alice pasted grep output at 10:15"
+
+
+def test_tactic_to_yaml_confidence_suggested():
+    """Suggested confidence is preserved in YAML."""
+    tactic = _make_tactic(confidence="suggested", evidence="bob proposed this as a next step")
+    data = yaml.safe_load(tactic_to_yaml(tactic))
+    assert data["confidence"] == "suggested"
+
+
 # ---------------------------------------------------------------------------
 # save_tactics
 # ---------------------------------------------------------------------------

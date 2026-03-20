@@ -126,9 +126,9 @@ async def report_view(
 
 @router.get("/knowledge", response_class=HTMLResponse)
 async def knowledge_view(
-    request: Request, category: str = "", tag: str = ""
+    request: Request, category: str = "", tag: str = "", confidence: str = ""
 ) -> HTMLResponse:
-    """Knowledge library with optional category and tag filtering."""
+    """Knowledge library with optional category, tag, and confidence filtering."""
     data_dir = request.app.state.data_dir
     all_tactics = scan_tactics(data_dir)
 
@@ -142,6 +142,8 @@ async def knowledge_view(
         filtered = [t for t in filtered if t.get("category") == category]
     if tag:
         filtered = [t for t in filtered if tag in t.get("tags", [])]
+    if confidence:
+        filtered = [t for t in filtered if t.get("confidence", "inferred") == confidence]
 
     return request.app.state.templates.TemplateResponse(
         request,
@@ -152,6 +154,7 @@ async def knowledge_view(
             "all_tags": all_tags,
             "selected_category": category,
             "selected_tag": tag,
+            "selected_confidence": confidence,
         },
     )
 

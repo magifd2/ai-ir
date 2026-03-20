@@ -142,3 +142,30 @@ def test_prompt_nonce_tag_differs_per_call():
     assert "<user_message_nonce_aaa>" in prompt_a
     assert "<user_message_nonce_bbb>" in prompt_b
     assert "<user_message_nonce_aaa>" not in prompt_b
+
+
+# ---------------------------------------------------------------------------
+# Confidence classification
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("level", ["confirmed", "inferred", "suggested"])
+def test_confidence_levels_present_in_prompt(level):
+    """All three confidence levels must be defined in the prompt."""
+    assert level in SYSTEM_PROMPT, f"Confidence level '{level}' missing from SYSTEM_PROMPT"
+
+
+def test_prompt_explains_confirmed_criteria():
+    """Prompt must explain what makes a tactic 'confirmed'."""
+    # Evidence of actual execution (output shared) must be described
+    assert "output" in SYSTEM_PROMPT.lower()
+
+
+def test_prompt_includes_confidence_in_json_schema():
+    """The JSON schema example must include the confidence field."""
+    assert '"confidence"' in SYSTEM_PROMPT
+
+
+def test_prompt_includes_evidence_in_json_schema():
+    """The JSON schema example must include the evidence field."""
+    assert '"evidence"' in SYSTEM_PROMPT

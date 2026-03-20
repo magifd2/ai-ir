@@ -28,7 +28,17 @@
       {% endfor %}
     </select>
   </div>
-  {% if selected_category or selected_tag %}
+  <div>
+    <label class="text-xs text-gray-500 block mb-1">確度</label>
+    <select onchange="applyFilter()" id="conf-filter"
+      class="text-sm border rounded px-2 py-1">
+      <option value="">すべて</option>
+      <option value="confirmed" {% if selected_confidence == "confirmed" %}selected{% endif %}>✓ 実行確認済</option>
+      <option value="inferred" {% if selected_confidence == "inferred" %}selected{% endif %}>~ 推定</option>
+      <option value="suggested" {% if selected_confidence == "suggested" %}selected{% endif %}>? 提案</option>
+    </select>
+  </div>
+  {% if selected_category or selected_tag or selected_confidence %}
   <div class="flex items-end">
     <a href="/knowledge" class="text-sm text-blue-600 hover:underline">クリア</a>
   </div>
@@ -43,9 +53,19 @@
      class="bg-white rounded-lg shadow hover:shadow-md transition p-5 block">
     <div class="flex items-start justify-between mb-2">
       <span class="text-xs font-mono text-gray-400">{{ t.get("id","") }}</span>
-      <span class="ml-2 text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded whitespace-nowrap">
-        {{ t.get("category","") }}
-      </span>
+      <div class="flex items-center gap-1 ml-2 flex-shrink-0">
+        {% set conf = t.get("confidence","inferred") %}
+        {% if conf == "confirmed" %}
+        <span class="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 rounded whitespace-nowrap">✓ 確認済</span>
+        {% elif conf == "suggested" %}
+        <span class="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded whitespace-nowrap">? 提案</span>
+        {% else %}
+        <span class="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded whitespace-nowrap">~ 推定</span>
+        {% endif %}
+        <span class="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded whitespace-nowrap">
+          {{ t.get("category","") }}
+        </span>
+      </div>
     </div>
     <h3 class="font-semibold text-gray-800 leading-tight mb-2">{{ t.get("title","") }}</h3>
     <p class="text-sm text-gray-600 line-clamp-2">{{ t.get("purpose","") }}</p>
@@ -82,9 +102,11 @@
 function applyFilter() {
   const cat = document.getElementById('cat-filter').value;
   const tag = document.getElementById('tag-filter').value;
+  const conf = document.getElementById('conf-filter').value;
   const params = new URLSearchParams();
   if (cat) params.set('category', cat);
   if (tag) params.set('tag', tag);
+  if (conf) params.set('confidence', conf);
   window.location.search = params.toString();
 }
 </script>

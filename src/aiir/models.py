@@ -253,6 +253,15 @@ class Tactic(BaseModel):
     procedure: str
     observations: str
     tags: list[str] = []
+    confidence: Literal["confirmed", "inferred", "suggested"] = "inferred"
+    """Evidence confidence level.
+
+    - ``confirmed``: Command output or explicit result was shared in the channel.
+    - ``inferred``: Participant mentioned running/checking something but no output shared.
+    - ``suggested``: Proposed as a recommendation; no indication it was executed.
+    """
+    evidence: str = ""
+    """One-sentence rationale explaining the confidence classification."""
     source: TacticSource
     created_at: str  # ISO date string (YYYY-MM-DD)
 

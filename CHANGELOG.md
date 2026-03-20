@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-03-20
+
+### Added
+- **Tactic confidence classification**: Each extracted tactic now carries a
+  `confidence` field (`confirmed` | `inferred` | `suggested`) and an `evidence`
+  field explaining the basis for the classification.
+  - `confirmed` — command output or an explicit result was shared in the channel.
+  - `inferred` — a participant stated they ran something but no output was shared.
+  - `suggested` — proposed as a recommendation; no indication it was executed.
+- **`Tactic` model** updated in `models.py` with `confidence` (default `"inferred"`)
+  and `evidence` (default `""`).
+- **Extractor prompt** updated in `knowledge/extractor.py` to ask the LLM to
+  classify confidence and supply a one-sentence evidence rationale. Invalid values
+  returned by the LLM are normalised to `"inferred"`.
+- **YAML output** (`knowledge/formatter.py`) now includes `confidence` and `evidence`
+  fields immediately after `title`.
+- **Web UI — knowledge library**: Confidence badge (✓ 確認済 / ~ 推定 / ? 提案) on
+  each tactic card, plus a confidence filter dropdown.
+- **Web UI — tactic detail**: Confidence badge in the header; evidence rationale shown
+  in the sidebar.
+- **Translation** (`translate/translator.py`): `evidence` field is now included in
+  the translated tactics payload; `confidence` (enum) is preserved as-is.
+- 11 new tests covering formatter YAML output, extractor prompt schema, and confidence
+  filter presence (251 total).
+
 ## [1.2.0] - 2026-03-20
 
 ### Added

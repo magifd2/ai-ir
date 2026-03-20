@@ -21,6 +21,8 @@ def tactic_to_yaml(tactic: Tactic) -> str:
     data = {
         "id": tactic.id,
         "title": tactic.title,
+        "confidence": tactic.confidence,
+        "evidence": tactic.evidence,
         "purpose": tactic.purpose,
         "category": tactic.category,
         "tools": tactic.tools,

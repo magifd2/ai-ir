@@ -3,9 +3,17 @@
 {% block content %}
 <div class="mb-6">
   <a href="/knowledge" class="text-sm text-blue-600 hover:underline">← ナレッジライブラリ</a>
-  <div class="flex items-center gap-3 mt-3">
+  <div class="flex items-center gap-3 mt-3 flex-wrap">
     <span class="font-mono text-sm text-gray-400">{{ tactic.get("id","") }}</span>
     <span class="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">{{ tactic.get("category","") }}</span>
+    {% set conf = tactic.get("confidence","inferred") %}
+    {% if conf == "confirmed" %}
+    <span class="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded font-medium">✓ 実行確認済</span>
+    {% elif conf == "suggested" %}
+    <span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded font-medium">? 提案</span>
+    {% else %}
+    <span class="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded font-medium">~ 推定</span>
+    {% endif %}
   </div>
   <h1 class="text-2xl font-bold mt-1">{{ tactic.get("title","") }}</h1>
 </div>
@@ -35,6 +43,12 @@
   </div>
 
   <div class="space-y-4">
+    {% if tactic.get("evidence") %}
+    <div class="bg-white rounded-lg shadow p-5">
+      <h2 class="font-semibold text-gray-700 mb-2">確度の根拠</h2>
+      <p class="text-sm text-gray-600 leading-relaxed">{{ tactic.get("evidence","") }}</p>
+    </div>
+    {% endif %}
     <div class="bg-white rounded-lg shadow p-5">
       <h2 class="font-semibold text-gray-700 mb-3">タグ</h2>
       <div class="flex flex-wrap gap-2">

@@ -184,6 +184,7 @@ def _translate_tactics(tactics: list[dict[str, Any]], lang: str, client: LLMClie
                 "purpose": t.get("purpose", ""),
                 "procedure": t.get("procedure", ""),
                 "observations": t.get("observations", ""),
+                "evidence": t.get("evidence", ""),
             }
             for t in tactics
         ]
@@ -199,6 +200,7 @@ def _translate_tactics(tactics: list[dict[str, Any]], lang: str, client: LLMClie
             t["purpose"] = tt.get("purpose", orig_t.get("purpose", ""))
             t["procedure"] = tt.get("procedure", orig_t.get("procedure", ""))
             t["observations"] = tt.get("observations", orig_t.get("observations", ""))
+            t["evidence"] = tt.get("evidence", orig_t.get("evidence", ""))
         result.append(t)
     return result
 

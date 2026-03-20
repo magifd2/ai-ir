@@ -68,6 +68,11 @@ Categories:
 
 - other: Does not fit any existing category
 
+For each tactic, classify its confidence level based on evidence in the conversation:
+- "confirmed": Command output or an explicit result (log lines, screenshots, tool output) was shared in the channel.
+- "inferred": A participant stated they ran or checked something, but no output was shared (e.g. "I checked the logs and found X").
+- "suggested": Proposed as a recommendation or next step; no indication it was actually executed.
+
 Respond with valid JSON:
 {{
   "tactics": [
@@ -78,7 +83,9 @@ Respond with valid JSON:
       "tools": ["tool1", "command2", "script3"],
       "procedure": "Step-by-step procedure description, numbered",
       "observations": "What results/patterns indicate and how to interpret them",
-      "tags": ["tag1", "tag2", "tag3"]
+      "tags": ["tag1", "tag2", "tag3"],
+      "confidence": "confirmed|inferred|suggested",
+      "evidence": "One sentence describing why this confidence level was assigned"
     }}
   ]
 }}"""
@@ -121,6 +128,12 @@ Focus on specific methods, commands, and approaches that could help in future in
     tactics = []
     for i, raw in enumerate(raw_tactics, start=1):
         tactic_id = _generate_tactic_id(incident_date, i)
+        raw_confidence = raw.get("confidence", "inferred")
+        confidence = (
+            raw_confidence
+            if raw_confidence in ("confirmed", "inferred", "suggested")
+            else "inferred"
+        )
         tactic = Tactic(
             id=tactic_id,
             title=raw.get("title", "Untitled Tactic"),
@@ -130,6 +143,8 @@ Focus on specific methods, commands, and approaches that could help in future in
             procedure=raw.get("procedure", ""),
             observations=raw.get("observations", ""),
             tags=raw.get("tags", []),
+            confidence=confidence,
+            evidence=raw.get("evidence", ""),
             source=TacticSource(
                 channel=export.channel_name,
                 participants=participants,
