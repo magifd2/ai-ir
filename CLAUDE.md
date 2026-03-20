@@ -12,8 +12,7 @@ investigation tactic knowledge documents.
 - `aiir summarize` - Generate incident summary using LLM
 - `aiir activity` - Analyze per-participant activities using LLM
 - `aiir roles` - Infer participant roles and relationships using LLM
-- `aiir knowledge` - Extract reusable investigation tactics, output as YAML knowledge docs
-- `aiir report` - Generate full analysis report
+- `aiir report` - Generate full analysis report; optionally save tactics as YAML (`--knowledge-dir`); tactics-only mode (`--knowledge-only`)
 - `aiir translate` - Translate report JSON into another language (narrative fields only)
 - `aiir serve` - Start read-only local web UI (FastAPI, binds to 127.0.0.1 only)
 
@@ -37,11 +36,11 @@ src/aiir/
     extractor.py   - Tactic knowledge extraction
     formatter.py   - YAML knowledge document formatter
   report/
-    generator.py   - Full report generation (Markdown/JSON)
+    generator.py   - Full report generation; make_incident_id() for grouping
   server/
     app.py         - FastAPI application factory (create_app)
     routes.py      - Route handlers (dashboard, report, knowledge, tactic, API)
-    loader.py      - File scanning with path traversal prevention
+    loader.py      - File scanning, incident_id grouping, path traversal prevention
     templates/     - Jinja2 HTML templates (Tailwind CSS CDN, Japanese UI)
   translate/
     translator.py  - translate_report(): narrative field translation via LLM

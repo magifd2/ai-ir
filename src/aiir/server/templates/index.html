@@ -10,7 +10,7 @@
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
   <div class="bg-white rounded-lg shadow p-4 text-center">
     <div class="text-3xl font-bold text-blue-600">{{ reports|length }}</div>
-    <div class="text-sm text-gray-500 mt-1">レポート</div>
+    <div class="text-sm text-gray-500 mt-1">インシデント</div>
   </div>
   <div class="bg-white rounded-lg shadow p-4 text-center">
     <div class="text-3xl font-bold text-purple-600">{{ tactics|length }}</div>
@@ -32,7 +32,9 @@
   {% set sev = r.get("summary", {}).get("severity", "unknown") %}
   {% set sev_colors = {"critical": "red", "high": "orange", "medium": "yellow", "low": "green", "unknown": "gray"} %}
   {% set color = sev_colors.get(sev, "gray") %}
-  <a href="/report?path={{ r['_path']|urlencode }}"
+  {% set iid = r.get("incident_id", "") %}
+  {% set report_url = "/report?id=" ~ iid if iid else "/report?path=" ~ r['_path']|urlencode %}
+  <a href="{{ report_url }}"
      class="bg-white rounded-lg shadow hover:shadow-md transition p-5 block">
     <div class="flex items-start justify-between mb-2">
       <h3 class="font-semibold text-gray-800 leading-tight">{{ r.get("summary", {}).get("title", r["_filename"]) }}</h3>
@@ -40,10 +42,19 @@
         {{ sev|upper }}
       </span>
     </div>
-    <p class="text-xs text-gray-500">{{ r.get("channel", "") }}</p>
+    <p class="text-xs text-gray-500">{{ r.get("metadata", {}).get("channel", r.get("channel", "")) }}</p>
     <p class="text-xs text-gray-400 mt-1">{{ r.get("summary", {}).get("affected_systems", [])|join(", ") }}</p>
     <p class="text-sm text-gray-600 mt-2 line-clamp-2">{{ r.get("summary", {}).get("summary", "")[:120] }}{% if r.get("summary", {}).get("summary", "")|length > 120 %}...{% endif %}</p>
-    <div class="mt-3 text-xs text-gray-400">{{ r["_filename"] }}</div>
+    <!-- Language badges -->
+    {% set langs = r.get("_langs", {}) %}
+    {% if langs|length > 1 %}
+    <div class="flex gap-1 mt-3">
+      {% for code in langs.keys()|sort %}
+      <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-mono">{{ lang_label(code) }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="mt-2 text-xs text-gray-400 font-mono">{{ iid if iid else r["_filename"] }}</div>
   </a>
   {% endfor %}
 </div>
@@ -51,7 +62,7 @@
 <div class="bg-white rounded-lg shadow p-8 text-center text-gray-400">
   <p class="text-4xl mb-3">📂</p>
   <p>レポートが見つかりません</p>
-  <p class="text-sm mt-2"><code>aiir report &lt;input.json&gt; --format json --output ./report.json</code> で生成してください</p>
+  <p class="text-sm mt-2"><code>aiir report &lt;input.json&gt; --format json -o ./report.json</code> で生成してください</p>
 </div>
 {% endif %}
 

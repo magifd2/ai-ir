@@ -10,11 +10,22 @@
   <div class="flex-1">
     <a href="/" class="text-sm text-blue-600 hover:underline">← ダッシュボード</a>
     <h1 class="text-2xl font-bold mt-2">{{ s.get("title", "インシデントレポート") }}</h1>
-    <div class="flex items-center gap-3 mt-2">
+    <div class="flex items-center gap-3 mt-2 flex-wrap">
       <span class="px-3 py-1 rounded text-sm font-bold text-{{ color }}-700 bg-{{ color }}-100">
         {{ sev|upper }}
       </span>
-      <span class="text-sm text-gray-500">{{ report.get("channel", "") }}</span>
+      <span class="text-sm text-gray-500">{{ report.get("metadata", {}).get("channel", report.get("channel", "")) }}</span>
+      {% if lang_links|length > 1 %}
+      <div class="flex gap-1 ml-auto">
+        {% for ll in lang_links %}
+        {% if ll.active %}
+        <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white">{{ ll.label }}</span>
+        {% elif ll.url %}
+        <a href="{{ ll.url }}" class="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200">{{ ll.label }}</a>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>

@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-03-20
+
+### Added
+- **`incident_id` in report JSON**: `aiir report --format json` now embeds a
+  deterministic 12-character hex ID derived from channel name + export timestamp.
+  Re-running on the same source data always produces the same ID, so translated
+  variants of a report share an identical `incident_id`.
+- **`lang` field in report JSON**: records the language of the report's narrative
+  content (`"en"` for analysis output, `"ja"` etc. for translated copies).
+- **`aiir translate` now sets `lang`** on the output and inherits `incident_id`
+  from the source report (replacing the removed `_translated_lang` marker).
+- **Incident grouping in web UI**: the dashboard groups reports with the same
+  `incident_id` into a single card. Language variant badges (EN / JA / …) are
+  shown on the card. The report view URL uses `?id=<incident_id>&lang=<code>`.
+- **Language switcher in report view**: when multiple language variants exist,
+  language buttons appear in the report header. Clicking switches to that variant.
+- **`aiir report --knowledge-dir (-k)`**: save extracted tactics as YAML files
+  alongside the full report in a single command, ensuring the knowledge base is
+  consistent with the report.
+- **`aiir report --knowledge-only`**: extract and save tactics only (skip summary,
+  activity, roles analysis). Requires `--knowledge-dir`.
+- `load_report_by_id()` in `server/loader.py`: load a report by `incident_id` and
+  language code, with English fallback.
+- 5 new tests for `incident_id` grouping and `load_report_by_id()`.
+
+### Removed
+- **`aiir knowledge` command**: removed to eliminate confusion between its
+  independently extracted tactics and those in `aiir report`. Use
+  `aiir report --knowledge-only -k ./knowledge` or
+  `aiir report --knowledge-dir ./knowledge` instead.
+
+### Changed
+- `server/loader.scan_reports()` now groups by `incident_id`; pre-v0.4.0 reports
+  without an `incident_id` are still shown individually (backward-compatible).
+- Dashboard stat label changed from "レポート" to "インシデント" to reflect grouping.
+- `server/routes.py`: `/report` route accepts `?id=&lang=` in addition to legacy
+  `?path=` for backward compatibility.
+
 ## [0.4.0] - 2026-03-20
 
 ### Added

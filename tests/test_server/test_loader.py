@@ -3,7 +3,7 @@ import json
 import yaml
 import pytest
 from pathlib import Path
-from aiir.server.loader import scan_reports, scan_tactics, load_report, load_tactic
+from aiir.server.loader import scan_reports, scan_tactics, load_report, load_tactic, load_report_by_id
 
 SAMPLE_REPORT = {
     "channel": "#test",
@@ -81,3 +81,54 @@ def test_scan_tactics_adds_metadata(data_dir):
     tactics = scan_tactics(data_dir)
     assert "_filename" in tactics[0]
     assert "_path" in tactics[0]
+
+
+def test_scan_reports_groups_by_incident_id(tmp_path):
+    """Two reports with the same incident_id are merged into one entry with _langs."""
+    base = {
+        "incident_id": "abc123def456",
+        "summary": {"title": "T", "severity": "high", "affected_systems": [], "timeline": [], "root_cause": "", "resolution": "", "summary": "s"},
+        "tactics": [],
+    }
+    en = dict(base, lang="en")
+    ja = dict(base, lang="ja", summary=dict(base["summary"], title="日本語タイトル"))
+    (tmp_path / "report.json").write_text(json.dumps(en))
+    (tmp_path / "report.ja.json").write_text(json.dumps(ja))
+
+    reports = scan_reports(tmp_path)
+    assert len(reports) == 1
+    r = reports[0]
+    assert set(r["_langs"].keys()) == {"en", "ja"}
+
+
+def test_load_report_by_id_returns_requested_lang(tmp_path):
+    base = {
+        "incident_id": "aabbccddeeff",
+        "summary": {"title": "T", "severity": "low", "affected_systems": [], "timeline": [], "root_cause": "", "resolution": "", "summary": "s"},
+        "tactics": [],
+    }
+    en = dict(base, lang="en")
+    ja = dict(base, lang="ja")
+    (tmp_path / "report.json").write_text(json.dumps(en))
+    (tmp_path / "report.ja.json").write_text(json.dumps(ja))
+
+    result = load_report_by_id(tmp_path, "aabbccddeeff", lang="ja")
+    assert result is not None
+    assert result.get("lang") == "ja"
+
+
+def test_load_report_by_id_falls_back_to_en(tmp_path):
+    base = {
+        "incident_id": "112233445566",
+        "summary": {"title": "T", "severity": "low", "affected_systems": [], "timeline": [], "root_cause": "", "resolution": "", "summary": "s"},
+        "tactics": [],
+    }
+    (tmp_path / "report.json").write_text(json.dumps(dict(base, lang="en")))
+
+    result = load_report_by_id(tmp_path, "112233445566", lang="ja")
+    assert result is not None
+    assert result.get("lang") == "en"  # fallback
+
+
+def test_load_report_by_id_unknown_id(tmp_path):
+    assert load_report_by_id(tmp_path, "nonexistent000", lang="en") is None

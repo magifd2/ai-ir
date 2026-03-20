@@ -4,9 +4,29 @@ from urllib.parse import unquote
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from aiir.server.loader import load_report, load_tactic, scan_reports, scan_tactics
+from aiir.server.loader import (
+    load_report,
+    load_report_by_id,
+    load_tactic,
+    scan_reports,
+    scan_tactics,
+)
 
 router = APIRouter()
+
+_LANG_LABELS = {
+    "en": "EN",
+    "ja": "JA",
+    "zh": "ZH",
+    "ko": "KO",
+    "de": "DE",
+    "fr": "FR",
+    "es": "ES",
+}
+
+
+def _lang_label(code: str) -> str:
+    return _LANG_LABELS.get(code, code.upper())
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -36,6 +56,7 @@ async def index(request: Request) -> HTMLResponse:
             "severity_counts": severity_counts,
             "category_counts": category_counts,
             "data_dir": str(data_dir),
+            "lang_label": _lang_label,
         },
     )
 
@@ -48,16 +69,53 @@ async def reports_list(request: Request) -> HTMLResponse:
 
 
 @router.get("/report", response_class=HTMLResponse)
-async def report_view(request: Request, path: str = "") -> HTMLResponse:
-    """Display a single incident report by relative path."""
+async def report_view(
+    request: Request,
+    path: str = "",
+    id: str = "",
+    lang: str = "en",
+) -> HTMLResponse:
+    """Display a single incident report.
+
+    Accepts either ``?id=<incident_id>&lang=<code>`` (preferred) or the
+    legacy ``?path=<rel_path>`` parameter for backward compatibility.
+    """
     data_dir = request.app.state.data_dir
-    report = load_report(data_dir, unquote(path))
+
+    if id:
+        report = load_report_by_id(data_dir, id, lang)
+    elif path:
+        report = load_report(data_dir, unquote(path))
+    else:
+        report = None
+
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
+
+    # Build language switcher links
+    langs = report.get("_langs", {})
+    current_lang = report.get("lang", "en")
+    incident_id = report.get("incident_id", "")
+    lang_links = [
+        {
+            "code": code,
+            "label": _lang_label(code),
+            "url": f"/report?id={incident_id}&lang={code}" if incident_id else "",
+            "active": code == current_lang,
+        }
+        for code in sorted(langs.keys())
+    ]
+
     return request.app.state.templates.TemplateResponse(
         request,
         "report.html",
-        {"report": report, "path": path},
+        {
+            "report": report,
+            "path": report.get("_path", path),
+            "lang_links": lang_links,
+            "current_lang": current_lang,
+            "incident_id": incident_id,
+        },
     )
 
 
@@ -109,16 +167,18 @@ async def tactic_view(request: Request, path: str = "") -> HTMLResponse:
 
 @router.get("/api/reports")
 async def api_reports(request: Request) -> JSONResponse:
-    """JSON API: list all reports with metadata."""
+    """JSON API: list all reports (one entry per incident) with metadata."""
     reports = scan_reports(request.app.state.data_dir)
     return JSONResponse(
         [
             {
+                "incident_id": r.get("incident_id", ""),
+                "langs": list(r.get("_langs", {}).keys()),
                 "path": r["_path"],
                 "filename": r["_filename"],
                 "title": r.get("summary", {}).get("title", ""),
                 "severity": r.get("summary", {}).get("severity", ""),
-                "channel": r.get("channel", ""),
+                "channel": r.get("metadata", {}).get("channel", r.get("channel", "")),
             }
             for r in reports
         ]

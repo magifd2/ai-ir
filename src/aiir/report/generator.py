@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime
 from pathlib import Path
 
@@ -12,6 +13,19 @@ from aiir.models import (
     RoleAnalysis,
     Tactic,
 )
+
+
+def make_incident_id(export: ProcessedExport) -> str:
+    """Generate a deterministic incident ID from channel name and export timestamp.
+
+    The same source data always produces the same ID, so translated versions
+    of a report share an identical incident_id and are recognized as one incident.
+
+    Returns:
+        12-character lowercase hex string (48-bit SHA-256 prefix).
+    """
+    key = f"{export.channel_name}|{export.export_timestamp.isoformat()}"
+    return hashlib.sha256(key.encode()).hexdigest()[:12]
 
 
 def generate_markdown_report(
@@ -176,6 +190,7 @@ def generate_json_report(
     activity: ActivityAnalysis,
     roles: RoleAnalysis,
     tactics: list[Tactic],
+    lang: str = "en",
 ) -> dict:
     """Generate a JSON report combining all analyses.
 
@@ -185,11 +200,14 @@ def generate_json_report(
         activity: Per-participant activity analysis.
         roles: Role and relationship inference results.
         tactics: List of extracted investigation tactics.
+        lang: Language code of the report's narrative content (default ``"en"``).
 
     Returns:
         Dictionary suitable for JSON serialization.
     """
     return {
+        "incident_id": make_incident_id(export),
+        "lang": lang,
         "metadata": {
             "channel": export.channel_name,
             "export_timestamp": export.export_timestamp.isoformat(),

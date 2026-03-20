@@ -433,50 +433,6 @@ def roles(input_file: Path, output: Path | None, fmt: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# knowledge command
-# ---------------------------------------------------------------------------
-
-
-@main.command()
-@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
-@click.option(
-    "--output-dir",
-    "-d",
-    type=click.Path(path_type=Path),
-    default=Path("./knowledge"),
-    show_default=True,
-    help="Directory to save YAML knowledge documents",
-)
-def knowledge(input_file: Path, output_dir: Path) -> None:
-    """Extract reusable investigation tactics as YAML knowledge docs.
-
-    Analyzes the conversation to identify investigation methods and approaches
-    that could be reused in future incidents, saving each as a YAML file.
-    """
-    from aiir.knowledge.extractor import extract_tactics
-    from aiir.knowledge.formatter import save_tactics
-
-    processed = _load_or_preprocess(input_file)
-    client = _get_llm_client()
-
-    err_console.print("[cyan]Extracting investigation tactics...[/cyan]")
-    tactics = extract_tactics(processed, client)
-
-    if not tactics:
-        err_console.print("[yellow]No tactics extracted from the conversation.[/yellow]")
-        return
-
-    saved_paths = save_tactics(tactics, output_dir)
-
-    err_console.print(
-        Panel(
-            "\n".join(f"  {p.name}" for p in saved_paths),
-            title=f"[bold green]Saved {len(saved_paths)} tactic(s) to {output_dir}[/bold green]",
-        )
-    )
-
-
-# ---------------------------------------------------------------------------
 # report command
 # ---------------------------------------------------------------------------
 
@@ -488,27 +444,90 @@ def knowledge(input_file: Path, output_dir: Path) -> None:
     "-o",
     type=click.Path(path_type=Path),
     default=None,
+    help="Output file (default: stdout). Ignored when --knowledge-only is set.",
 )
 @click.option(
     "--format",
     "fmt",
     type=click.Choice(["json", "markdown"]),
     default="markdown",
+    help="Report output format. Ignored when --knowledge-only is set.",
 )
-def report(input_file: Path, output: Path | None, fmt: str) -> None:
+@click.option(
+    "--knowledge-dir",
+    "-k",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Also save extracted tactics as YAML files to this directory.",
+)
+@click.option(
+    "--knowledge-only",
+    is_flag=True,
+    default=False,
+    help=(
+        "Extract and save tactics only — skip summary, activity, and roles analysis. "
+        "Requires --knowledge-dir."
+    ),
+)
+def report(
+    input_file: Path,
+    output: Path | None,
+    fmt: str,
+    knowledge_dir: Path | None,
+    knowledge_only: bool,
+) -> None:
     """Generate a comprehensive incident analysis report.
 
     Runs all analyses (summary, activity, roles, tactics) and combines them
     into a single report document.
+
+    Use --knowledge-only to extract and save investigation tactics without
+    generating a full report. Use --knowledge-dir to save tactics as YAML
+    alongside the full report.
+
+    Examples:
+
+        # Full report (Markdown)
+        aiir report incident.json -o report.md
+
+        # Full report (JSON) + save tactics as YAML
+        aiir report incident.json --format json -o report.json -k ./knowledge
+
+        # Tactics only
+        aiir report incident.json --knowledge-only -k ./knowledge
     """
-    from aiir.analyze.activity import analyze_activity
-    from aiir.analyze.roles import analyze_roles
-    from aiir.analyze.summarizer import summarize_incident
     from aiir.knowledge.extractor import extract_tactics
-    from aiir.report.generator import generate_json_report, generate_markdown_report
+    from aiir.knowledge.formatter import save_tactics
+
+    if knowledge_only and not knowledge_dir:
+        err_console.print(
+            "[red][ERROR] --knowledge-only requires --knowledge-dir (-k).[/red]"
+        )
+        sys.exit(1)
 
     processed = _load_or_preprocess(input_file)
     client = _get_llm_client()
+
+    if knowledge_only:
+        err_console.print("[cyan]Extracting investigation tactics...[/cyan]")
+        tactics = extract_tactics(processed, client)
+        if not tactics:
+            err_console.print("[yellow]No tactics extracted from the conversation.[/yellow]")
+            return
+        saved_paths = save_tactics(tactics, knowledge_dir)
+        err_console.print(
+            Panel(
+                "\n".join(f"  {p.name}" for p in saved_paths),
+                title=f"[bold green]Saved {len(saved_paths)} tactic(s) to {knowledge_dir}[/bold green]",
+            )
+        )
+        return
+
+    # Full report
+    from aiir.analyze.activity import analyze_activity
+    from aiir.analyze.roles import analyze_roles
+    from aiir.analyze.summarizer import summarize_incident
+    from aiir.report.generator import generate_json_report, generate_markdown_report
 
     err_console.print("[cyan]Running full incident analysis...[/cyan]")
 
@@ -535,6 +554,12 @@ def report(input_file: Path, output: Path | None, fmt: str) -> None:
         )
 
     _write_output(content, output)
+
+    if knowledge_dir:
+        saved_paths = save_tactics(tactics, knowledge_dir)
+        err_console.print(
+            f"[green]Saved {len(saved_paths)} tactic(s) to {knowledge_dir}[/green]"
+        )
 
     err_console.print(
         Panel(

@@ -254,7 +254,7 @@ def test_translate_report_adds_lang_field():
         json.dumps({"tactics": [{"title": "T", "purpose": "P", "procedure": "Pr", "observations": "O"}]}),
     ]
     result = translate_report(SAMPLE_REPORT, "ja", client)
-    assert result["_translated_lang"] == "ja"
+    assert result["lang"] == "ja"
     assert client.complete_json.call_count == 4
 
 

@@ -225,7 +225,9 @@ def translate_report(report: dict[str, Any], lang: str, client: LLMClient) -> di
         A new dict with narrative fields translated; all other fields unchanged.
     """
     result = dict(report)
-    result["_translated_lang"] = lang
+    result["lang"] = lang
+    # Remove the old marker key if present from a previous run
+    result.pop("_translated_lang", None)
 
     if "summary" in report and report["summary"]:
         result["summary"] = _translate_summary(report["summary"], lang, client)
