@@ -44,11 +44,11 @@ Icon?
 Thumbs.db
 ehthumbs.db
 
-# Project outputs
-knowledge/
+# Project outputs (root-level only, not src/aiir/knowledge/)
+/knowledge/
 *.preprocessed.json
-report.md
-report.json
+/report.md
+/report.json
 
 # Secrets
 *.key

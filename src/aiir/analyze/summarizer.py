@@ -81,10 +81,9 @@ def _format_conversation(export: ProcessedExport) -> str:
     """
     lines = []
     for msg in export.messages:
-        if msg.post_type == "bot":
-            continue
         ts = msg.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-        lines.append(f"[{ts}] @{msg.user_name}: {msg.text}")
+        prefix = "[bot] " if msg.post_type == "bot" else ""
+        lines.append(f"[{ts}] {prefix}@{msg.user_name}: {msg.text}")
     return "\n".join(lines)
 
 
