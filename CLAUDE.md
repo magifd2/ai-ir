@@ -68,6 +68,23 @@ src/aiir/
 - Python with uv virtual environment (`uv sync` to install dependencies)
 - Run tests: `uv run pytest tests/ -v`
 
+### Documentation Rule: Design Rationale
+
+When a design decision intentionally deviates from a common best practice (e.g. no caching,
+sequential instead of parallel, two renderers instead of one), document the reasoning inline.
+Without this, the decision looks like an oversight to future contributors and reviewers.
+
+**Where to write it:**
+- Module-level docstring — for structural choices within a single file
+- `docs/en/maintenance.md` (and `docs/ja/`) — for architectural or operational choices that
+  span multiple files or affect how the tool is used
+
+**What to include:**
+1. What the current behaviour is and what it is *not* doing
+2. **Why** — the specific constraint or trade-off that drives the choice
+   (target environment, measured data, maintenance cost, etc.)
+3. **When to reconsider** — the condition that would make the alternative worth revisiting
+
 ## Release Procedure
 
 Follow these steps in order when cutting a release:
