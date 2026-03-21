@@ -305,6 +305,38 @@ aiir report preprocessed.json --knowledge-only --knowledge-dir ./knowledge
 `--knowledge-dir` はレポートと同じ LLM コールを共有するため、`report.json` の tactics 件数と
 YAML ファイルの件数は常に一致します。
 
+### RAG 用 Markdown へのエクスポート
+
+`aiir knowledge export` を使用すると、既存のタクティクス YAML ファイルを RAG ナレッジベース
+（例: [lite-rag](https://github.com/magifd2/lite-rag)）に取り込むための Markdown ファイルに変換できます。
+
+```bash
+# ./knowledge 内の tac-*.yaml をすべて ./knowledge-md/*.md に変換
+aiir knowledge export -k ./knowledge -o ./knowledge-md
+
+# 出力先を省略すると <knowledge-dir>-md になる
+aiir knowledge export -k ./knowledge
+```
+
+**1ファイル1タクティクスにする理由:** 複数タクティクスをまとめたファイルにすると、RAG の検索結果が
+近隣タクティクスに引きずられます。1ファイルに絞ることで各ドキュメントが意味的に独立し、精度が上がります。
+
+**各 Markdown ファイルの構造：**
+
+```
+# {title}
+
+**ID:** ... | **Category:** ... | **Confidence:** ...
+**Tags:** ...
+**Source:** ...
+
+## Purpose（目的）
+## Tools（ツール）
+## Procedure（手順）
+## Observations（観察ポイント）
+## Evidence（根拠） ← evidence フィールドが空でない場合のみ出力
+```
+
 ### 設計上の背景：`aiir report` の逐次 LLM 呼び出し
 
 `aiir report` は LLM を 4 回逐次呼び出します（summary → activity → roles → tactics）。

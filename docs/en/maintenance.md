@@ -13,6 +13,7 @@ This document describes procedures for maintaining and improving the ai-ir tools
 5. [Security Maintenance](#5-security-maintenance)
 6. [Adding New Features](#6-adding-new-features)
 6.4. [Knowledge Extraction via `aiir report`](#64-knowledge-extraction-via-aiir-report)
+6.4.1. [Exporting Tactics as Markdown for RAG](#641-exporting-tactics-as-markdown-for-rag)
 6.5. [Web UI (`aiir serve`)](#65-web-ui-aiir-serve)
 6.6. [Translation (`aiir translate`)](#66-translation-aiir-translate)
 6.7. [Process Review (`aiir review`)](#67-process-review-aiir-review)
@@ -309,6 +310,40 @@ aiir report preprocessed.json --knowledge-only --knowledge-dir ./knowledge
 
 Because `--knowledge-dir` shares the same LLM call as the report, the number of tactics
 in `report.json` and in the YAML files is always identical.
+
+### Exporting Tactics as Markdown for RAG
+
+Use `aiir knowledge export` to convert existing tactic YAML files into individual Markdown
+documents suitable for ingestion into a RAG knowledge base (e.g.
+[lite-rag](https://github.com/magifd2/lite-rag)).
+
+```bash
+# Convert all tac-*.yaml files in ./knowledge to ./knowledge-md/*.md
+aiir knowledge export -k ./knowledge -o ./knowledge-md
+
+# Default output dir is <knowledge-dir>-md (i.e. ./knowledge-md)
+aiir knowledge export -k ./knowledge
+```
+
+**Why one file per tactic?** Keeping each RAG document to a single tactic prevents retrieval
+results from being dominated by neighbouring tactics in a combined file. Each document is
+semantically focused and independently retrievable.
+
+**Markdown structure per file:**
+
+```
+# {title}
+
+**ID:** ... | **Category:** ... | **Confidence:** ...
+**Tags:** ...
+**Source:** ...
+
+## Purpose
+## Tools
+## Procedure
+## Observations
+## Evidence   ← only present when evidence field is non-empty
+```
 
 ### Design Rationale: Sequential LLM Calls in `aiir report`
 

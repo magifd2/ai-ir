@@ -9,7 +9,7 @@ to generate actionable reports and reusable knowledge.
 - **Incident Summary** — AI-generated timeline, root cause, and executive summary
 - **Activity Analysis** — Per-participant breakdown of methods, tools, and findings
 - **Role Inference** — Infer IR roles (Incident Commander, SME, etc.) and relationships
-- **Knowledge Extraction** — Extract reusable investigation tactics as YAML documents
+- **Knowledge Extraction** — Extract reusable investigation tactics as YAML documents; export to Markdown for RAG ingestion
 - **Process Review** — Evaluate IR process quality (phase timing, communication, role clarity, improvement checklist)
 - **Translation** — Translate report JSON into another language while preserving technical content
 - **Local Web UI** — Browse analysis output with `aiir serve` (read-only, localhost only)
@@ -138,6 +138,16 @@ uv run aiir review report.json --format markdown -o review.md
 ```
 
 The web UI automatically shows a **対応評価** tab when `report.review.json` is present.
+
+### Export tactics as Markdown for RAG (optional)
+
+Convert tactic YAML files to individual Markdown documents for ingestion into a RAG knowledge base.
+One file per tactic keeps retrieval focused and precise.
+
+```bash
+# Convert all tactic YAMLs in ./knowledge to Markdown in ./knowledge-md
+uv run aiir knowledge export -k ./knowledge -o ./knowledge-md
+```
 
 ### Browse results in the web UI
 
