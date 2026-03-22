@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-03-22
+
+### Fixed
+- **`aiir serve` review localisation for multi-part report names**: When report files follow
+  the `<name>.report[.lang].json` naming convention (e.g. `incident.report.ja.json`), the
+  web UI now correctly resolves the localised review file (`incident.review.ja.json`) instead
+  of constructing an incorrect path (`incident.report.review.ja.json`). The stem-stripping
+  loop in `server/loader.py` now iterates until all intermediate suffixes are removed.
+- Added two regression tests for the multi-suffix naming case.
+
 ## [1.6.0] - 2026-03-21
 
 ### Added
