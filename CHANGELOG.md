@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-03-23
+
+### Fixed
+- **LLM output IoC defanging** (`report/generator.py`): LLMs can re-introduce fanged IoCs
+  (e.g. `http://evil.com`) in generated narrative fields even when the input conversation was
+  defanged. Added `defang_dict()` to `parser/defang.py` to recursively apply `defang_text()`
+  to all string leaves in a dict/list tree. Applied to `summary`, `activity`, `roles`, and
+  `tactics` sections in `generate_json_report()`; applied to the final string in
+  `generate_markdown_report()`. `metadata` fields are excluded as they are not LLM-generated.
+
+### Added
+- **`defang_dict()` utility** (`parser/defang.py`): Recursively defangs all string values in
+  a dict/list structure. Useful for sanitising any LLM-generated data before storage.
+- **Japanese README** (`README.ja.md`): Full Japanese translation of the root README.
+  English README now links to the Japanese version in the header.
+- **Web UI screenshots** in README: 6 screenshots covering the dashboard, summary, activity,
+  roles, tactics, and review tabs.
+
 ## [1.6.1] - 2026-03-22
 
 ### Fixed
