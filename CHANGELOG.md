@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-03-23
+
+### Fixed
+- **LLM prompt IoC preservation** (`analyze/summarizer.py`, `analyze/activity.py`, `analyze/roles.py`,
+  `knowledge/extractor.py`): Added an explicit "IoC SAFETY" instruction block to all four analyser
+  system prompts directing the LLM to reproduce defanged IoC forms as-is (e.g. `hxxp://`, `10[.]0[.]0[.]1`)
+  and not to restore them. This is the proactive layer of the two-layer IoC defence introduced in v1.6.2:
+  the prompt prevents refanging at the source, while `defang_dict()` post-processing catches anything
+  that slips through.
+
 ## [1.6.2] - 2026-03-23
 
 ### Fixed
