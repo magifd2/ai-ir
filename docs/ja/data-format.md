@@ -2,7 +2,7 @@
 
 ## 入力フォーマット：scat/stail JSON エクスポート
 
-[scat](https://github.com/magifd2/scat) および [stail](https://github.com/magifd2/stail)
+[scat](https://github.com/nlink-jp/scat) および [stail](https://github.com/nlink-jp/stail)
 は、いずれも同一の JSON スキーマでエクスポートを生成します。
 
 ### スキーマ

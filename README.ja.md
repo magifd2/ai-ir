@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-`ai-ir` は [scat](https://github.com/magifd2/scat) または [stail](https://github.com/magifd2/stail) でエクスポートした
+`ai-ir` は [scat](https://github.com/nlink-jp/scat) または [stail](https://github.com/nlink-jp/stail) でエクスポートした
 インシデントレスポンス Slack 会話履歴を解析し、実用的なレポートと再利用可能なナレッジを生成します。
 
 ## 機能
@@ -21,7 +21,7 @@
 Python 3.11以上と [uv](https://docs.astral.sh/uv/) が必要です。
 
 ```bash
-git clone https://github.com/magifd2/ai-ir
+git clone https://github.com/nlink-jp/ai-ir
 cd ai-ir
 uv sync
 ```
@@ -200,7 +200,7 @@ uv run aiir serve --no-browser
 - [セキュリティ](docs/ja/security.md) / [Security](docs/en/security.md)
 - [メンテナンス](docs/ja/maintenance.md) / [Maintenance](docs/en/maintenance.md)
 
-## 開発
+## ビルド
 
 ```bash
 # 開発依存関係込みでインストール

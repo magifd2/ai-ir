@@ -464,5 +464,5 @@ into a stable, feature-complete toolset.
 - Security-first design: no external transmission except configured LLM endpoint
 - Documentation: architecture, data format, knowledge format, security considerations
 
-[Unreleased]: https://github.com/magifd2/ai-ir/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/magifd2/ai-ir/releases/tag/v0.1.0
+[Unreleased]: https://github.com/nlink-jp/ai-ir/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/nlink-jp/ai-ir/releases/tag/v0.1.0

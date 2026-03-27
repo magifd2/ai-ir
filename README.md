@@ -3,7 +3,7 @@
 [日本語](README.ja.md)
 
 `ai-ir` analyzes incident response Slack conversation history exported via
-[scat](https://github.com/magifd2/scat) or [stail](https://github.com/magifd2/stail)
+[scat](https://github.com/nlink-jp/scat) or [stail](https://github.com/nlink-jp/stail)
 to generate actionable reports and reusable knowledge.
 
 ## Features
@@ -22,7 +22,7 @@ to generate actionable reports and reusable knowledge.
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/magifd2/ai-ir
+git clone https://github.com/nlink-jp/ai-ir
 cd ai-ir
 uv sync
 ```
@@ -203,7 +203,7 @@ See [docs/en/security.md](docs/en/security.md) for detailed security considerati
 - [Security](docs/en/security.md) / [セキュリティ](docs/ja/security.md)
 - [Maintenance](docs/en/maintenance.md) / [メンテナンス](docs/ja/maintenance.md)
 
-## Development
+## Building
 
 ```bash
 # Install with dev dependencies

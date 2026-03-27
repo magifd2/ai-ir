@@ -2,7 +2,7 @@
 
 ## Input Format: scat/stail JSON Export
 
-Both [scat](https://github.com/magifd2/scat) and [stail](https://github.com/magifd2/stail)
+Both [scat](https://github.com/nlink-jp/scat) and [stail](https://github.com/nlink-jp/stail)
 produce exports in the same JSON schema.
 
 ### Schema

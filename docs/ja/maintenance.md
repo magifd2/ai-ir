@@ -308,7 +308,7 @@ YAML ファイルの件数は常に一致します。
 ### RAG 用 Markdown へのエクスポート
 
 `aiir knowledge export` を使用すると、既存のタクティクス YAML ファイルを RAG ナレッジベース
-（例: [lite-rag](https://github.com/magifd2/lite-rag)）に取り込むための Markdown ファイルに変換できます。
+（例: [lite-rag](https://github.com/nlink-jp/lite-rag)）に取り込むための Markdown ファイルに変換できます。
 
 ```bash
 # ./knowledge 内の tac-*.yaml をすべて ./knowledge-md/*.md に変換

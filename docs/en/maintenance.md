@@ -315,7 +315,7 @@ in `report.json` and in the YAML files is always identical.
 
 Use `aiir knowledge export` to convert existing tactic YAML files into individual Markdown
 documents suitable for ingestion into a RAG knowledge base (e.g.
-[lite-rag](https://github.com/magifd2/lite-rag)).
+[lite-rag](https://github.com/nlink-jp/lite-rag)).
 
 ```bash
 # Convert all tac-*.yaml files in ./knowledge to ./knowledge-md/*.md
