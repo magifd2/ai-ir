@@ -41,8 +41,16 @@ Common IR roles:
 
 For each participant, provide:
 - inferred_role: Most appropriate role title
-- confidence: "high" if role is clearly evident, "medium" if probable, "low" if speculative
+- confidence: Rate based on BOTH role clarity AND contribution significance:
+  - "high": Active contributor with clearly evident role (e.g. led investigation, made decisions, performed analysis)
+  - "medium": Participated meaningfully but role is not fully clear, OR role is clear but contribution was limited
+  - "low": Minimal or no active contribution (e.g. joined channel but did not post, only reacted, or posted a single trivial message). Observers and passive participants must always be rated "low" regardless of how certain you are about their role.
 - evidence: Specific quotes or behaviors from the conversation that support the role inference
+
+IMPORTANT: A participant who joined the channel but contributed little or nothing
+must be rated "low" confidence. Do NOT rate someone "high" simply because you are
+confident they are an Observer — being confident about inactivity is not the same
+as being an important contributor.
 
 For relationships, identify:
 - reports_to: One person providing updates/escalating to another
