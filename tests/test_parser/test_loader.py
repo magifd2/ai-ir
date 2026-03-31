@@ -167,3 +167,38 @@ def test_load_ndjson_empty_file_raises(tmp_path):
     p.write_text("", encoding="utf-8")
     with pytest.raises(ValueError, match="No messages found"):
         load_export(p)
+
+
+def test_missing_user_name_falls_back_to_user_id():
+    """Messages without user_name should use user_id as fallback."""
+    data = {
+        "export_timestamp": "2026-03-19T10:00:00Z",
+        "channel_name": "#test",
+        "messages": [
+            {
+                "user_id": "W01790AAGGM",
+                "post_type": "user",
+                "timestamp": "2026-03-19T09:00:00Z",
+                "timestamp_unix": "1742378000.000000",
+                "text": "message from deactivated user",
+                "files": [],
+                "is_reply": False,
+            },
+            {
+                "user_id": "U999",
+                "user_name": "",
+                "post_type": "bot",
+                "timestamp": "2026-03-19T09:01:00Z",
+                "timestamp_unix": "1742378060.000000",
+                "text": "bot with empty name",
+                "files": [],
+                "is_reply": False,
+            },
+        ],
+    }
+    export = load_export_from_string(json.dumps(data))
+    assert len(export.messages) == 2
+    # Missing user_name → falls back to user_id
+    assert export.messages[0].user_name == "W01790AAGGM"
+    # Empty user_name → also falls back to user_id
+    assert export.messages[1].user_name == "U999"

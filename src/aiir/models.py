@@ -5,7 +5,7 @@ from __future__ import annotations
 import json as _json
 from typing import Literal, Optional
 
-from pydantic import AwareDatetime, BaseModel, field_validator
+from pydantic import AwareDatetime, BaseModel, field_validator, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -17,7 +17,7 @@ class SlackMessage(BaseModel):
     """A single message from a scat/stail JSON export."""
 
     user_id: str
-    user_name: str
+    user_name: str = ""
     post_type: Literal["user", "bot"]
     timestamp: AwareDatetime
     timestamp_unix: str
@@ -25,6 +25,13 @@ class SlackMessage(BaseModel):
     files: list = []
     thread_timestamp_unix: str = ""
     is_reply: bool = False
+
+    @model_validator(mode="after")
+    def _fill_user_name(self) -> SlackMessage:
+        """Fall back to user_id if user_name is empty or missing."""
+        if not self.user_name:
+            self.user_name = self.user_id
+        return self
 
 
 class SlackExport(BaseModel):
