@@ -3,9 +3,39 @@
 from __future__ import annotations
 
 import json as _json
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import AwareDatetime, BaseModel, field_validator, model_validator
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _extract_block_text(blocks: list[dict[str, Any]]) -> list[str]:
+    """Recursively extract plain text from Block Kit blocks."""
+    texts: list[str] = []
+    for block in blocks:
+        # Section / header blocks with a direct text object.
+        text_obj = block.get("text")
+        if isinstance(text_obj, dict):
+            t = text_obj.get("text", "")
+            if t:
+                texts.append(t)
+        # Rich-text and other blocks with nested elements.
+        for child in block.get("elements", []):
+            if isinstance(child, dict):
+                t = child.get("text", "")
+                if isinstance(t, str) and t:
+                    texts.append(t)
+                # One more level (rich_text_section → elements).
+                for grandchild in child.get("elements", []):
+                    if isinstance(grandchild, dict):
+                        gt = grandchild.get("text", "")
+                        if isinstance(gt, str) and gt:
+                            texts.append(gt)
+    return texts
 
 
 # ---------------------------------------------------------------------------
@@ -13,8 +43,22 @@ from pydantic import AwareDatetime, BaseModel, field_validator, model_validator
 # ---------------------------------------------------------------------------
 
 
+class SlackAttachment(BaseModel):
+    """A legacy rich attachment from a Slack message."""
+
+    fallback: str = ""
+    color: str = ""
+    pretext: str = ""
+    title: str = ""
+    title_link: str = ""
+    text: str = ""
+    fields: list[dict[str, Any]] = []
+    footer: str = ""
+    image_url: str = ""
+
+
 class SlackMessage(BaseModel):
-    """A single message from a scat/stail JSON export."""
+    """A single message from a scat/stail/scli JSON export."""
 
     user_id: str
     user_name: str = ""
@@ -23,6 +67,8 @@ class SlackMessage(BaseModel):
     timestamp_unix: str
     text: str
     files: list = []
+    attachments: list[SlackAttachment] = []
+    blocks: list[dict[str, Any]] = []
     thread_timestamp_unix: str = ""
     is_reply: bool = False
 
@@ -31,6 +77,28 @@ class SlackMessage(BaseModel):
         """Fall back to user_id if user_name is empty or missing."""
         if not self.user_name:
             self.user_name = self.user_id
+        return self
+
+    @model_validator(mode="after")
+    def _fill_text_from_attachments(self) -> SlackMessage:
+        """Supplement empty text with content from attachments/blocks.
+
+        When a message's primary content lives in legacy attachments or
+        Block Kit blocks, the ``text`` field from the Slack API may be
+        empty.  This validator builds a fallback so that downstream
+        analysis (defanging, LLM prompts) still sees the content.
+        """
+        if self.text:
+            return self
+        parts: list[str] = []
+        for att in self.attachments:
+            for piece in (att.pretext, att.title, att.text, att.fallback):
+                if piece and piece not in parts:
+                    parts.append(piece)
+        if not parts and self.blocks:
+            parts.extend(_extract_block_text(self.blocks))
+        if parts:
+            self.text = "\n".join(parts)
         return self
 
 

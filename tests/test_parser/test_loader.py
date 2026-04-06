@@ -202,3 +202,154 @@ def test_missing_user_name_falls_back_to_user_id():
     assert export.messages[0].user_name == "W01790AAGGM"
     # Empty user_name → also falls back to user_id
     assert export.messages[1].user_name == "U999"
+
+
+# ---------------------------------------------------------------------------
+# Attachments and blocks
+# ---------------------------------------------------------------------------
+
+
+def test_attachment_fields_parsed():
+    """Attachment objects are parsed and available on SlackMessage."""
+    data = {
+        "export_timestamp": "2026-03-19T10:00:00Z",
+        "channel_name": "#test",
+        "messages": [
+            {
+                "user_id": "B001",
+                "user_name": "alert-bot",
+                "post_type": "bot",
+                "timestamp": "2026-03-19T09:55:00Z",
+                "timestamp_unix": "1742378100.000000",
+                "text": "fallback text",
+                "files": [],
+                "attachments": [
+                    {
+                        "fallback": "Server is down",
+                        "color": "#ff0000",
+                        "title": "Alert",
+                        "text": "Production server unreachable",
+                        "fields": [{"title": "Severity", "value": "Critical", "short": True}],
+                    }
+                ],
+                "is_reply": False,
+            }
+        ],
+    }
+    export = load_export_from_string(json.dumps(data))
+    msg = export.messages[0]
+    assert len(msg.attachments) == 1
+    att = msg.attachments[0]
+    assert att.fallback == "Server is down"
+    assert att.color == "#ff0000"
+    assert att.title == "Alert"
+    assert att.text == "Production server unreachable"
+    assert len(att.fields) == 1
+    # text is not empty, so attachments don't override it
+    assert msg.text == "fallback text"
+
+
+def test_attachment_text_fallback_when_text_empty():
+    """When text is empty, attachment content is used as fallback."""
+    data = {
+        "export_timestamp": "2026-03-19T10:00:00Z",
+        "channel_name": "#test",
+        "messages": [
+            {
+                "user_id": "B001",
+                "post_type": "bot",
+                "timestamp": "2026-03-19T09:55:00Z",
+                "timestamp_unix": "1742378100.000000",
+                "text": "",
+                "files": [],
+                "attachments": [
+                    {
+                        "title": "CPU Alert",
+                        "text": "Server cpu-1 at 95%",
+                        "fallback": "CPU > 90%",
+                    }
+                ],
+                "is_reply": False,
+            }
+        ],
+    }
+    export = load_export_from_string(json.dumps(data))
+    msg = export.messages[0]
+    assert "CPU Alert" in msg.text
+    assert "Server cpu-1 at 95%" in msg.text
+
+
+def test_blocks_fields_parsed():
+    """Block Kit JSON is parsed and available on SlackMessage."""
+    data = {
+        "export_timestamp": "2026-03-19T10:00:00Z",
+        "channel_name": "#test",
+        "messages": [
+            {
+                "user_id": "B001",
+                "post_type": "bot",
+                "timestamp": "2026-03-19T09:55:00Z",
+                "timestamp_unix": "1742378100.000000",
+                "text": "Hello world",
+                "files": [],
+                "blocks": [
+                    {"type": "section", "text": {"type": "mrkdwn", "text": "Hello *world*"}}
+                ],
+                "is_reply": False,
+            }
+        ],
+    }
+    export = load_export_from_string(json.dumps(data))
+    msg = export.messages[0]
+    assert len(msg.blocks) == 1
+    assert msg.blocks[0]["type"] == "section"
+    # text is not empty, so blocks don't override it
+    assert msg.text == "Hello world"
+
+
+def test_blocks_text_fallback_when_text_empty():
+    """When text is empty and no attachments, block text is used as fallback."""
+    data = {
+        "export_timestamp": "2026-03-19T10:00:00Z",
+        "channel_name": "#test",
+        "messages": [
+            {
+                "user_id": "B001",
+                "post_type": "bot",
+                "timestamp": "2026-03-19T09:55:00Z",
+                "timestamp_unix": "1742378100.000000",
+                "text": "",
+                "files": [],
+                "blocks": [
+                    {"type": "section", "text": {"type": "mrkdwn", "text": "Important *alert*"}}
+                ],
+                "is_reply": False,
+            }
+        ],
+    }
+    export = load_export_from_string(json.dumps(data))
+    msg = export.messages[0]
+    assert "Important *alert*" in msg.text
+
+
+def test_extra_fields_ignored():
+    """Unknown fields in export JSON are silently ignored (Pydantic default)."""
+    data = {
+        "export_timestamp": "2026-03-19T10:00:00Z",
+        "channel_name": "#test",
+        "messages": [
+            {
+                "user_id": "U001",
+                "post_type": "user",
+                "timestamp": "2026-03-19T09:55:00Z",
+                "timestamp_unix": "1742378100.000000",
+                "text": "hi",
+                "files": [],
+                "some_future_field": "should be ignored",
+                "is_reply": False,
+            }
+        ],
+    }
+    export = load_export_from_string(json.dumps(data))
+    assert len(export.messages) == 1
+    assert export.messages[0].text == "hi"
