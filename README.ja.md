@@ -2,7 +2,8 @@
 
 [English](README.md)
 
-`ai-ir` は [scat](https://github.com/nlink-jp/scat) または [stail](https://github.com/nlink-jp/stail) でエクスポートした
+`ai-ir` は [scat](https://github.com/nlink-jp/scat)、[stail](https://github.com/nlink-jp/stail)、
+または [scli](https://github.com/nlink-jp/scli) でエクスポートした
 インシデントレスポンス Slack 会話履歴を解析し、実用的なレポートと再利用可能なナレッジを生成します。
 
 ## 機能

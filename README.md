@@ -3,8 +3,8 @@
 [日本語](README.ja.md)
 
 `ai-ir` analyzes incident response Slack conversation history exported via
-[scat](https://github.com/nlink-jp/scat) or [stail](https://github.com/nlink-jp/stail)
-to generate actionable reports and reusable knowledge.
+[scat](https://github.com/nlink-jp/scat), [stail](https://github.com/nlink-jp/stail),
+or [scli](https://github.com/nlink-jp/scli) to generate actionable reports and reusable knowledge.
 
 ## Features
 

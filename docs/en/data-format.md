@@ -1,9 +1,10 @@
 # Data Format Specifications
 
-## Input Format: scat/stail JSON Export
+## Input Format: scat/stail/scli JSON Export
 
-Both [scat](https://github.com/nlink-jp/scat) and [stail](https://github.com/nlink-jp/stail)
-produce exports in the same JSON schema.
+[scat](https://github.com/nlink-jp/scat), [stail](https://github.com/nlink-jp/stail),
+and [scli](https://github.com/nlink-jp/scli) produce exports in a shared JSON schema
+(see each project's `docs/EXPORT_FORMAT.md` for the canonical specification).
 
 ### Schema
 
@@ -46,8 +47,14 @@ produce exports in the same JSON schema.
 | `timestamp_unix` | string | Unix timestamp as decimal string |
 | `text` | string | Message text content |
 | `files` | array | Attached file objects (may be empty) |
+| `attachments` | array | Legacy rich attachments (omitted when empty) |
+| `blocks` | array | Block Kit JSON payload (omitted when empty) |
 | `thread_timestamp_unix` | string | Parent thread ts, or empty string |
 | `is_reply` | boolean | Whether this is a thread reply |
+
+When `text` is empty and `attachments` or `blocks` are present, ai-ir
+automatically extracts text content from them so that downstream analysis
+(IoC defanging, LLM prompts) still sees the message content.
 
 ## Preprocessed Format
 

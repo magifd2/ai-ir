@@ -1,9 +1,10 @@
 # データフォーマット仕様
 
-## 入力フォーマット：scat/stail JSON エクスポート
+## 入力フォーマット：scat/stail/scli JSON エクスポート
 
-[scat](https://github.com/nlink-jp/scat) および [stail](https://github.com/nlink-jp/stail)
-は、いずれも同一の JSON スキーマでエクスポートを生成します。
+[scat](https://github.com/nlink-jp/scat)、[stail](https://github.com/nlink-jp/stail)、
+および [scli](https://github.com/nlink-jp/scli) は共通の JSON スキーマでエクスポートを生成します
+（正式な仕様は各プロジェクトの `docs/EXPORT_FORMAT.md` を参照）。
 
 ### スキーマ
 
@@ -46,8 +47,13 @@
 | `timestamp_unix` | string | Unix タイムスタンプ（10 進数文字列） |
 | `text` | string | メッセージ本文 |
 | `files` | array | 添付ファイルオブジェクト（空の場合あり） |
+| `attachments` | array | レガシーリッチ添付（空の場合は省略） |
+| `blocks` | array | Block Kit JSON ペイロード（空の場合は省略） |
 | `thread_timestamp_unix` | string | 親スレッドのタイムスタンプ、またはスレッド外の場合は空文字列 |
 | `is_reply` | boolean | スレッド返信かどうか |
+
+`text` が空で `attachments` または `blocks` にコンテンツがある場合、ai-ir は自動的にテキストを抽出し、
+下流の分析（IoC 無害化、LLM プロンプト）でメッセージ内容が失われないようにします。
 
 ## 前処理済みフォーマット
 
